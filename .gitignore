@@ -1,0 +1,19 @@
+# Various System/Temporary Files:
+Thumbs.db
+.DS_Store
+*.swp
+*~
+Desktop.ini
+
+# XCode User Settings:
+*.pbxuser
+xcuserdata/
+
+# Eclipse Workspace Metadata:
+.metadata/
+
+# Resources Folder:
+res/
+
+# Binary Folder:
+bin/
