@@ -1,0 +1,88 @@
+package org.vamp;
+
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
+
+import javax.swing.JPanel;
+
+class RenderFramePanel extends JPanel {
+	// ===========================================================
+	// Constants
+	// ===========================================================
+
+	private static final long serialVersionUID = -880391736204088408L;
+
+	// ===========================================================
+	// Fields
+	// ===========================================================
+
+	private final BufferedImage mRenderFrame;
+	private Dimension mVideoDimension;
+
+	// ===========================================================
+	// Constructors
+	// ===========================================================
+
+	public RenderFramePanel(final BufferedImage pRenderFrame) {
+		this.mRenderFrame = pRenderFrame;
+	}
+
+	// ===========================================================
+	// Getter & Setter
+	// ===========================================================
+
+	public void setVideoDimension(final int pVideoWidth, final int pVideoHeight) {
+		this.mVideoDimension = new Dimension(pVideoWidth, pVideoHeight);
+	}
+
+	// ===========================================================
+	// Methods for/from SuperClass/Interfaces
+	// ===========================================================
+
+	@Override
+	public void paint(final Graphics pGraphics) {
+		super.paint(pGraphics);
+
+		if (this.mVideoDimension == null) {
+			/* Video didn't start yet! */
+			return;
+		}
+
+		final float videoAspectRatio = (float) this.mVideoDimension.width / this.mVideoDimension.height;
+		final float panelAspectRatio = (float) this.getWidth() / this.getHeight();
+
+		final int drawX;
+		final int drawY;
+		final int drawWidth;
+		final int drawHeight;
+		if (videoAspectRatio > panelAspectRatio) {
+			drawWidth = this.getWidth();
+			drawHeight = Math.round(drawWidth / videoAspectRatio);
+
+			drawX = 0;
+			drawY = Math.round(0.5f * (this.getHeight() - drawHeight));
+		} else {
+			drawHeight = this.getHeight();
+			drawWidth = Math.round(drawHeight * videoAspectRatio);
+
+			drawY = 0;
+			drawX = Math.round(0.5f * (this.getWidth() - drawWidth));
+		}
+
+		final Graphics2D graphics2D = (Graphics2D) pGraphics;
+		graphics2D.drawImage(this.mRenderFrame, drawX, drawY, drawWidth, drawHeight, null);
+
+		/* Simple frame to make it look a little nicer: */
+		graphics2D.drawRect(drawX, drawY, drawWidth - 1, drawHeight - 1);
+	}
+
+	// ===========================================================
+	// Methods
+	// ===========================================================
+
+	// ===========================================================
+	// Inner and Anonymous Classes
+	// ===========================================================
+}
