@@ -1,11 +1,14 @@
 package org.vamp.ui;
 
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.awt.image.BufferedImageOp;
-import java.awt.image.ConvolveOp;
 import java.awt.image.DataBufferInt;
-import java.awt.image.Kernel;
-import java.util.Arrays;
+
+import jsr166y.ForkJoinPool;
+
+import org.vamp.util.blur.HorizontalBoxBlurRenderFrameForkJoin;
+import org.vamp.util.blur.VerticalBoxBlurRenderFrameForkJoin;
 
 public class OutputRenderFramePanel extends RenderFramePanel {
 	// ===========================================================
@@ -21,7 +24,17 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	protected final BufferedImage mInputRenderFrame;
 	protected final int[] mInputRenderFrameBuffer;
 
-	private BufferedImageOp mBlurOp;
+	protected boolean mReferenceRenderFrameBufferInitialized;
+	protected final int[] mReferenceRenderFrameBuffer;
+	protected final int[][] mTempRenderFrameBuffers = new int[2][];
+
+	protected final int mAmplificationRed = 3;
+	protected final int mAmplificationGreen = 3;
+	protected final int mAmplificationBlue = 3;
+
+	protected final int mBlurSize = 5;
+
+	protected final ForkJoinPool mForkJoinPool;
 
 	// ===========================================================
 	// Constructors
@@ -33,7 +46,20 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		this.mInputRenderFrame = pInputRenderFrame;
 		this.mInputRenderFrameBuffer = ((DataBufferInt) this.mInputRenderFrame.getRaster().getDataBuffer()).getData();
 
-		this.mBlurOp = OutputRenderFramePanel.createBlurOp(3);
+		this.mReferenceRenderFrameBuffer = new int[this.mInputRenderFrameBuffer.length];
+
+		for (int i = 0; i < this.mTempRenderFrameBuffers.length; i++) {
+			this.mTempRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
+		}
+
+		this.mForkJoinPool = new ForkJoinPool();
+
+		this.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent pMouseEvent) {
+				OutputRenderFramePanel.this.mReferenceRenderFrameBufferInitialized = false;
+			}
+		});
 	}
 
 	// ===========================================================
@@ -48,27 +74,56 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// Methods
 	// ===========================================================
 
-	private static BufferedImageOp createBlurOp(final int pKernelSize) {
-		final float[] kernelData = new float[pKernelSize * pKernelSize];
-		Arrays.fill(kernelData, 1f / kernelData.length);
-
-		final Kernel kernel = new Kernel(pKernelSize, pKernelSize, kernelData);
-		return new ConvolveOp(kernel);
-	}
-
 	public void notifyInputRenderFrameChanged() {
-		this.mBlurOp.filter(this.mInputRenderFrame, this.mRenderFrame);
-
+		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
+		final int[][] tempRenderFrameBuffers = this.mTempRenderFrameBuffers;
+		final int[] referenceRenderFrameBuffer = this.mReferenceRenderFrameBuffer;
 		final int[] outputRenderFrameBuffer = this.mRenderFrameBuffer;
 
-		/* Quick RGB to GRAYScale conversion for demonstration purposes: */
-		for (int i = 0; i < outputRenderFrameBuffer.length; i++) {
-			final int argb = outputRenderFrameBuffer[i];
-			final int b = (argb & 0xFF);
-			final int g = ((argb >> 8) & 0xFF);
-			final int r = ((argb >> 16) & 0xFF);
-			final int grey = (r + g + g + b) >> 2; // performance optimized - not real grey!
-			outputRenderFrameBuffer[i] = (grey << 16) + (grey << 8) + grey;
+		/* Box Blurring: */
+		final long startTime = System.currentTimeMillis();
+		this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], this.mBlurSize));
+		this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], this.mBlurSize));
+		final long endTime = System.currentTimeMillis();
+		System.out.println("Blurring took: " + (endTime - startTime) + "ms");
+
+		/* Reference frame: */
+		final int pixelCount = this.mInputRenderFrameBuffer.length;
+		if (this.mReferenceRenderFrameBufferInitialized == false) {
+			this.mReferenceRenderFrameBufferInitialized = true;
+			System.arraycopy(tempRenderFrameBuffers[1], 0, referenceRenderFrameBuffer, 0, pixelCount);
+		}
+
+		/* Amplifcation: */
+		final int amplificationRed = this.mAmplificationRed;
+		final int amplificationGreen = this.mAmplificationGreen;
+		final int amplificationBlue = this.mAmplificationBlue;
+
+		for (int i = pixelCount - 1; i >= 0; i--) {
+			final int referenceARGB = referenceRenderFrameBuffer[i];
+			final int referenceRed = ((referenceARGB >> 16) & 0xFF);
+			final int referenceGreen = ((referenceARGB >> 8) & 0xFF);
+			final int referenceBlue = (referenceARGB & 0xFF);
+
+			final int tempARGB = tempRenderFrameBuffers[1][i];
+			final int tempRed = ((tempARGB >> 16) & 0xFF);
+			final int tempGreen = ((tempARGB >> 8) & 0xFF);
+			final int tempBlue = (tempARGB & 0xFF);
+
+			final int deltaRed = (referenceRed - tempRed);
+			final int deltaGreen = (referenceGreen - tempGreen);
+			final int deltaBlue = (referenceBlue - tempBlue);
+
+			final int inputARGB = inputRenderFrameBuffer[i];
+			final int inputRed = ((inputARGB >> 16) & 0xFF);
+			final int inputGreen = ((inputARGB >> 8) & 0xFF);
+			final int inputBlue = (inputARGB & 0xFF);
+
+			final int outputRed = Math.max(0, Math.min(255, inputRed + amplificationRed * deltaRed));
+			final int outputGreen = Math.max(0, Math.min(255, inputGreen + amplificationGreen * deltaGreen));
+			final int outputBlue = Math.max(0, Math.min(255, inputBlue + amplificationBlue * deltaBlue));
+
+			outputRenderFrameBuffer[i] = (outputRed << 16) | (outputGreen << 8) | (outputBlue);
 		}
 	}
 
