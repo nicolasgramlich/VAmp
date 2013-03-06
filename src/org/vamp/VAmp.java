@@ -7,7 +7,6 @@ import java.awt.GridLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBufferInt;
 
 import javax.swing.JFrame;
 
@@ -35,13 +34,8 @@ public class VAmp extends JFrame {
 
 	private final DirectMediaPlayer mMediaPlayer;
 
-	private final BufferedImage mInputFrame;
-	private final int[] mInputFrameBuffer;
-	private final RenderFramePanel mInputRenderFramePanel;
-
-	private final BufferedImage mOutputFrame;
-	private final int[] mOutputFrameBuffer;
-	private final RenderFramePanel mOutputRenderFramePanel;
+	private final InputRenderFramePanel mInputRenderFramePanel;
+	private final OutputRenderFramePanel mOutputRenderFramePanel;
 
 	private final RenderFrameCallback mRenderFrameCallback;
 
@@ -53,22 +47,20 @@ public class VAmp extends JFrame {
 		super("VAmp");
 
 		/* Create to input frame buffer that VLC will render into: */
-		this.mInputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
-		this.mInputFrame.setAccelerationPriority(1.0f);
-		this.mInputFrameBuffer = ((DataBufferInt) VAmp.this.mInputFrame.getRaster().getDataBuffer()).getData();
+		final BufferedImage inputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
+		inputFrame.setAccelerationPriority(1.0f);
 
 		/* Create the output frame buffer that our results will be displayed in: */ 
-		this.mOutputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
-		this.mOutputFrame.setAccelerationPriority(1.0f);
-		this.mOutputFrameBuffer = ((DataBufferInt) VAmp.this.mOutputFrame.getRaster().getDataBuffer()).getData();
+		final BufferedImage outputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
+		outputFrame.setAccelerationPriority(1.0f);
 
 		/* Create the input render frame panel that will display the input frame buffer: */
-		this.mInputRenderFramePanel = new RenderFramePanel(this.mInputFrame);
+		this.mInputRenderFramePanel = new InputRenderFramePanel(inputFrame);
 		this.mInputRenderFramePanel.setPreferredSize(new Dimension(VAmp.WIDTH, VAmp.HEIGHT));
 		this.mInputRenderFramePanel.setSize(VAmp.WIDTH, VAmp.HEIGHT);
 
 		/* Create the output render frame panel that will display the output frame buffer: */
-		this.mOutputRenderFramePanel = new RenderFramePanel(this.mOutputFrame);
+		this.mOutputRenderFramePanel = new OutputRenderFramePanel(outputFrame, inputFrame);
 		this.mOutputRenderFramePanel.setPreferredSize(new Dimension(VAmp.WIDTH, VAmp.HEIGHT));
 		this.mOutputRenderFramePanel.setSize(VAmp.WIDTH, VAmp.HEIGHT);
 
@@ -80,10 +72,12 @@ public class VAmp extends JFrame {
 
 		/* Create the VLC media objects that will in the end play the video and render into the input frame buffer: */
 		this.mMediaPlayerFactory = new MediaPlayerFactory(pVLCArgs);
-		this.mRenderFrameCallback = new RenderFrameCallback(this.mInputFrame) {
+		this.mRenderFrameCallback = new RenderFrameCallback(inputFrame) {
 			@Override
 			protected void onDisplay(final DirectMediaPlayer pDirectMediaPlayer, final int[] pARGBBuffer) {
-				VAmp.this.onDisplay(pDirectMediaPlayer, pARGBBuffer);
+				VAmp.this.mInputRenderFramePanel.repaint();
+				VAmp.this.mOutputRenderFramePanel.notifyInputRenderFrameChanged();
+				VAmp.this.mOutputRenderFramePanel.repaint();
 			}
 		};
 
@@ -121,24 +115,6 @@ public class VAmp extends JFrame {
 	// ===========================================================
 	// Methods
 	// ===========================================================
-
-	protected void onDisplay(final DirectMediaPlayer pDirectMediaPlayer, final int[] pARGBBuffer) {
-		final int[] inputFrameBuffer = VAmp.this.mInputFrameBuffer;
-		final int[] outputFrameBuffer = VAmp.this.mOutputFrameBuffer;
-
-		/* Quick RGB to GRAYScale conversion for demonstation purposes: */
-		for (int i = 0; i < inputFrameBuffer.length; i++) {
-			final int argb = inputFrameBuffer[i];
-			final int b = (argb & 0xFF);
-			final int g = ((argb >> 8) & 0xFF);
-			final int r = ((argb >> 16) & 0xFF);
-			final int grey = (r + g + g + b) >> 2; // performance optimized - not real grey!
-			outputFrameBuffer[i] = (grey << 16) + (grey << 8) + grey;
-		}
-
-		VAmp.this.mInputRenderFramePanel.repaint();
-		VAmp.this.mOutputRenderFramePanel.repaint();
-	}
 
 	// ===========================================================
 	// Inner and Anonymous Classes

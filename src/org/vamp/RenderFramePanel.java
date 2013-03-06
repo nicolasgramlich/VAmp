@@ -4,10 +4,11 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 
 import javax.swing.JPanel;
 
-class RenderFramePanel extends JPanel {
+public abstract class RenderFramePanel extends JPanel {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -18,8 +19,10 @@ class RenderFramePanel extends JPanel {
 	// Fields
 	// ===========================================================
 
-	private final BufferedImage mRenderFrame;
-	private Dimension mVideoDimension;
+	protected final BufferedImage mRenderFrame;
+	protected final int[] mRenderFrameBuffer;
+
+	protected Dimension mVideoDimension;
 
 	// ===========================================================
 	// Constructors
@@ -27,6 +30,8 @@ class RenderFramePanel extends JPanel {
 
 	public RenderFramePanel(final BufferedImage pRenderFrame) {
 		this.mRenderFrame = pRenderFrame;
+
+		this.mRenderFrameBuffer = ((DataBufferInt) this.mRenderFrame.getRaster().getDataBuffer()).getData();
 	}
 
 	// ===========================================================
