@@ -93,9 +93,22 @@ public class VAmp extends JFrame {
 		final JPanel centerPanel = new JPanel();
 		{
 			centerPanel.setLayout(new GridLayout(1, 2));
-	
-			centerPanel.add(this.mInputRenderFramePanel);
-			centerPanel.add(this.mOutputRenderFramePanel);
+
+			final JPanel inputRenderFramePanelContainer = new JPanel(new GridLayout());
+			{
+				inputRenderFramePanelContainer.setBorder(BorderFactory.createTitledBorder("Input:"));
+
+				inputRenderFramePanelContainer.add(this.mInputRenderFramePanel);
+			}
+			centerPanel.add(inputRenderFramePanelContainer);
+
+			final JPanel outputRenderFramePanelContainer = new JPanel(new GridLayout());
+			{
+				outputRenderFramePanelContainer.setBorder(BorderFactory.createTitledBorder("Output:"));
+
+				outputRenderFramePanelContainer.add(this.mOutputRenderFramePanel);
+			}
+			centerPanel.add(outputRenderFramePanelContainer);
 		}
 		contentPane.add(centerPanel, BorderLayout.CENTER);
 
@@ -103,7 +116,7 @@ public class VAmp extends JFrame {
 		{
 			final TitledBorder controlsPanelBorder = BorderFactory.createTitledBorder("Controls:");
 			controlsPanel.setBorder(controlsPanelBorder);
-			
+
 			final JPanel amplificationPanel = new JPanel(new FlowLayout());
 			{
 				final TitledBorder amplificationPanelBorder = BorderFactory.createTitledBorder("Amplification:");

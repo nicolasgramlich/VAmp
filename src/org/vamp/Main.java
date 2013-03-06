@@ -1,6 +1,8 @@
 package org.vamp;
 
+import java.awt.font.TextAttribute;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import javax.swing.JFrame;
@@ -36,6 +38,9 @@ public class Main {
 
 					/* Reduce font size a little: */
 					Main.changeFontSizeBy(-1);
+
+					/* Make TitledBorder.font bold: */
+					Main.changeTitledBorder();
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
@@ -67,6 +72,17 @@ public class Main {
 	// ===========================================================
 	// Methods
 	// ===========================================================
+
+	private static void changeTitledBorder() {
+		final FontUIResource titledBorderFontUIResource = (FontUIResource)UIManager.getDefaults().get("TitledBorder.font");
+
+		@SuppressWarnings("unchecked")
+		final Map<TextAttribute, Object> attributes = (Map<TextAttribute, Object>) titledBorderFontUIResource.getAttributes();
+//		attributes.put(TextAttribute.UNDERLINE, TextAttribute.UNDERLINE_ON);
+		attributes.put(TextAttribute.WEIGHT, TextAttribute.WEIGHT_BOLD);
+
+		UIManager.getDefaults().put("TitledBorder.font", titledBorderFontUIResource.deriveFont(attributes));
+	}
 
 	private static void changeFontSizeBy(final int pSizeReduction) {
 		final Hashtable<Object, Object> defaults = UIManager.getDefaults();
