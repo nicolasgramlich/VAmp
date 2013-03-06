@@ -5,6 +5,8 @@ import java.util.Arrays;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import uk.co.caprica.vlcj.discovery.NativeDiscovery;
+
 public class Main {
 	// ===========================================================
 	// Constants
@@ -19,6 +21,8 @@ public class Main {
 	// ===========================================================
 
 	public static void main(final String[] pArgs) {
+		new NativeDiscovery().discover();
+
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
