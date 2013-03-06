@@ -1,7 +1,5 @@
 package org.vamp;
 
-import java.util.Arrays;
-
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
@@ -27,7 +25,11 @@ public class Main {
 			@Override
 			public void run() {
 				final String mediaFilename = pArgs[0];
-				final String[] vlcArgs = (pArgs.length == 1) ? new String[] {} : Arrays.copyOfRange(pArgs, 1, pArgs.length);
+
+				final String[] vlcArgs = new String[pArgs.length - 1 + 1];
+				System.arraycopy(pArgs, 1, vlcArgs, 0, pArgs.length - 1);
+				vlcArgs[vlcArgs.length - 1] = "--no-video-title-show";
+
 				final VAmp vamp = new VAmp(mediaFilename, vlcArgs);
 
 				vamp.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
