@@ -13,6 +13,8 @@ import javax.swing.JFrame;
 import org.vamp.ui.InputRenderFramePanel;
 import org.vamp.ui.OutputRenderFramePanel;
 
+import uk.co.caprica.vlcj.player.MediaPlayer;
+import uk.co.caprica.vlcj.player.MediaPlayerEventAdapter;
 import uk.co.caprica.vlcj.player.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.direct.BufferFormat;
 import uk.co.caprica.vlcj.player.direct.BufferFormatCallback;
@@ -26,8 +28,8 @@ public class VAmp extends JFrame {
 
 	private static final long serialVersionUID = -5466882865417468244L;
 
-	private static final int WIDTH = 720;
-	private static final int HEIGHT = 480;
+	private static final int WIDTH = 640;
+	private static final int HEIGHT = 352;
 
 	// ===========================================================
 	// Fields
@@ -95,7 +97,14 @@ public class VAmp extends JFrame {
 			}
 		}, this.mRenderFrameCallback);
 
+		this.mMediaPlayer.setRepeat(true);
 		this.mMediaPlayer.playMedia(pMediaFilename);
+		this.mMediaPlayer.addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
+			@Override
+			public void timeChanged(final MediaPlayer pMediaPlayer, final long pTime) {
+//				System.out.println(pTime);
+			}
+		});
 
 		this.addWindowListener(new WindowAdapter() {
 			@Override
