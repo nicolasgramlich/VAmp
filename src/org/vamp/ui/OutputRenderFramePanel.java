@@ -5,6 +5,7 @@ import java.awt.image.BufferedImageOp;
 import java.awt.image.ConvolveOp;
 import java.awt.image.DataBufferInt;
 import java.awt.image.Kernel;
+import java.util.Arrays;
 
 public class OutputRenderFramePanel extends RenderFramePanel {
 	// ===========================================================
@@ -20,6 +21,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	protected final BufferedImage mInputRenderFrame;
 	protected final int[] mInputRenderFrameBuffer;
 
+	private BufferedImageOp mBlurOp;
+
 	// ===========================================================
 	// Constructors
 	// ===========================================================
@@ -29,6 +32,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 		this.mInputRenderFrame = pInputRenderFrame;
 		this.mInputRenderFrameBuffer = ((DataBufferInt) this.mInputRenderFrame.getRaster().getDataBuffer()).getData();
+
+		this.mBlurOp = OutputRenderFramePanel.createBlurOp(3);
 	}
 
 	// ===========================================================
@@ -43,17 +48,16 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// Methods
 	// ===========================================================
 
-	public void notifyInputRenderFrameChanged() {
-		/* Blur: */
-		final float[] kernelData = new float[] {
-			1 / 9f, 1 / 9f, 1 / 9f,
-			1 / 9f, 1 / 9f, 1 / 9f,
-			1 / 9f, 1 / 9f, 1 / 9f
-		};
+	private static BufferedImageOp createBlurOp(final int pKernelSize) {
+		final float[] kernelData = new float[pKernelSize * pKernelSize];
+		Arrays.fill(kernelData, 1f / kernelData.length);
 
-		final Kernel kernel = new Kernel(3, 3, kernelData);
-		final BufferedImageOp op = new ConvolveOp(kernel);
-		op.filter(this.mInputRenderFrame, this.mRenderFrame);
+		final Kernel kernel = new Kernel(pKernelSize, pKernelSize, kernelData);
+		return new ConvolveOp(kernel);
+	}
+
+	public void notifyInputRenderFrameChanged() {
+		this.mBlurOp.filter(this.mInputRenderFrame, this.mRenderFrame);
 
 		final int[] outputRenderFrameBuffer = this.mRenderFrameBuffer;
 
