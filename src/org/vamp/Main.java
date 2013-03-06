@@ -2,6 +2,9 @@ package org.vamp;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
+import org.pushingpixels.substance.api.skin.SubstanceGraphiteGlassLookAndFeel;
 
 import uk.co.caprica.vlcj.discovery.NativeDiscovery;
 
@@ -24,6 +27,12 @@ public class Main {
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {
+				try {
+					UIManager.setLookAndFeel(new SubstanceGraphiteGlassLookAndFeel());
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
 				final String mediaFilename = pArgs[0];
 
 				final String[] vlcArgs = new String[pArgs.length - 1 + 1];
