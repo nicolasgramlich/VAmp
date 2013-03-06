@@ -10,6 +10,9 @@ import java.awt.image.BufferedImage;
 
 import javax.swing.JFrame;
 
+import org.vamp.ui.InputRenderFramePanel;
+import org.vamp.ui.OutputRenderFramePanel;
+
 import uk.co.caprica.vlcj.player.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.direct.BufferFormat;
 import uk.co.caprica.vlcj.player.direct.BufferFormatCallback;

@@ -1,4 +1,4 @@
-package org.vamp;
+package org.vamp.ui;
 
 import java.awt.image.BufferedImage;
 
