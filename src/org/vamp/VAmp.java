@@ -42,14 +42,25 @@ public class VAmp extends JFrame {
 	private static final int WIDTH = 640;
 	private static final int HEIGHT = 352;
 
+	public static final int AMPLIFICATION_MIN = 0;
 	public static final int AMPLIFICATION_MAX = 25;
 	public static final float AMPLIFICATION_DEFAULT = 2.5f;
 
 	private static final int AMPLIFICATION_SLIDER_FACTOR = 10;
 
+	private static final int AMPLIFICATION_SLIDER_MIN = AMPLIFICATION_MIN * AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_MAX = AMPLIFICATION_MAX * AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_DEFAULT = Math.round(AMPLIFICATION_DEFAULT * AMPLIFICATION_SLIDER_FACTOR);
-	private static final int AMPLIFICATION_SLIDER_STEP = 50;
+	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 50;
+
+	public static final int BLUR_RADIUS_DEFAULT = 5;
+	public static final int BLUR_RADIUS_MIN = 0;
+	public static final int BLUR_RADIUS_MAX = 25;
+
+	private static final int BLUR_RADIUS_SLIDER_MIN = BLUR_RADIUS_MIN;
+	private static final int BLUR_RADIUS_SLIDER_MAX = BLUR_RADIUS_MAX;
+	private static final int BLUR_RADIUS_SLIDER_DEFAULT = BLUR_RADIUS_DEFAULT;
+	private static final int BLUR_RADIUS_SLIDER_LABEL_STEP = 5;
 
 	// ===========================================================
 	// Fields
@@ -124,9 +135,9 @@ public class VAmp extends JFrame {
 
 				final JLabel amplificationSliderLabel = new JLabel(String.valueOf(AMPLIFICATION_DEFAULT) + "x", (Icon)null, 0);
 
-				final JSlider amplificationSlider = new JSlider(JSlider.HORIZONTAL, 0, AMPLIFICATION_SLIDER_MAX, AMPLIFICATION_SLIDER_DEFAULT);
-				Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
-				for (int i = 0; i <= AMPLIFICATION_SLIDER_MAX; i += AMPLIFICATION_SLIDER_STEP) {
+				final JSlider amplificationSlider = new JSlider(JSlider.HORIZONTAL, AMPLIFICATION_SLIDER_MIN, AMPLIFICATION_SLIDER_MAX, AMPLIFICATION_SLIDER_DEFAULT);
+				final Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
+				for (int i = 0; i <= AMPLIFICATION_SLIDER_MAX; i += AMPLIFICATION_SLIDER_LABEL_STEP) {
 					labels.put(i, new JLabel((i / AMPLIFICATION_SLIDER_FACTOR) + "x"));
 				}
 				amplificationSlider.setLabelTable(labels);
@@ -148,7 +159,41 @@ public class VAmp extends JFrame {
 				amplificationPanel.add(amplificationSlider);
 				amplificationPanel.add(amplificationSliderLabel);
 			}
+
+			final JPanel blurPanel = new JPanel(new FlowLayout());
+			{
+				final TitledBorder blurPanelBorder = BorderFactory.createTitledBorder("Blur-Radius:");
+				blurPanel.setBorder(blurPanelBorder);
+
+				final JLabel blurRadiusSliderLabel = new JLabel(String.valueOf(BLUR_RADIUS_DEFAULT) + "px", (Icon)null, 0);
+
+				final JSlider blurRadiusSlider = new JSlider(JSlider.HORIZONTAL, BLUR_RADIUS_SLIDER_MIN, BLUR_RADIUS_SLIDER_MAX, BLUR_RADIUS_SLIDER_DEFAULT);
+				final Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
+				for (int i = 0; i <= BLUR_RADIUS_SLIDER_MAX; i += BLUR_RADIUS_SLIDER_LABEL_STEP) {
+					labels.put(i, new JLabel(i + "x"));
+				}
+				blurRadiusSlider.setLabelTable(labels);
+
+				blurRadiusSlider.setMajorTickSpacing(5);
+				blurRadiusSlider.setPaintLabels(true);
+				blurRadiusSlider.setMinorTickSpacing(1);
+				blurRadiusSlider.setPaintTicks(true);
+
+				blurRadiusSlider.addChangeListener(new ChangeListener() {
+					public void stateChanged(ChangeEvent pChangeEvent) {
+//					if(!blurSlider.getValueIsAdjusting()) {
+						final int blurRadius = blurRadiusSlider.getValue();
+						blurRadiusSliderLabel.setText(String.valueOf(blurRadius) + "px");
+						mOutputRenderFramePanel.setBlurRadius(blurRadius);
+//					}
+					}
+				});
+				blurPanel.add(blurRadiusSlider);
+				blurPanel.add(blurRadiusSliderLabel);
+			}
+
 			controlsPanel.add(amplificationPanel);
+			controlsPanel.add(blurPanel);
 		}
 		contentPane.add(controlsPanel, BorderLayout.NORTH);
 

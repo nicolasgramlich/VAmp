@@ -33,7 +33,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	protected float mAmplificationGreen = VAmp.AMPLIFICATION_DEFAULT;
 	protected float mAmplificationBlue = VAmp.AMPLIFICATION_DEFAULT;
 
-	protected final int mBlurSize = 5;
+	protected int mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(VAmp.BLUR_RADIUS_DEFAULT);
 
 	protected final ForkJoinPool mForkJoinPool;
 
@@ -57,7 +57,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 		this.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mouseClicked(MouseEvent pMouseEvent) {
+			public void mouseClicked(final MouseEvent pMouseEvent) {
 				OutputRenderFramePanel.this.mReferenceRenderFrameBufferInitialized = false;
 			}
 		});
@@ -68,9 +68,15 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// ===========================================================
 
 	public void setAmplification(final float pAmplificationRed, final float pAmplificationGreen, final float pAmplificationBlue) {
-		mAmplificationRed = pAmplificationRed;
-		mAmplificationGreen = pAmplificationGreen;
-		mAmplificationBlue = pAmplificationBlue;
+		this.mAmplificationRed = pAmplificationRed;
+		this.mAmplificationGreen = pAmplificationGreen;
+		this.mAmplificationBlue = pAmplificationBlue;
+	}
+
+	public void setBlurRadius(final int pBlurRadius) {
+		this.mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(pBlurRadius);
+
+		this.mReferenceRenderFrameBufferInitialized = false;
 	}
 
 	// ===========================================================
@@ -81,6 +87,10 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// Methods
 	// ===========================================================
 
+	private static int convertBlurRadiusToBlurSize(final int pBlurRadius) {
+		return (2 * pBlurRadius) + 1;
+	}
+
 	public void notifyInputRenderFrameChanged() {
 		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
 		final int[][] tempRenderFrameBuffers = this.mTempRenderFrameBuffers;
@@ -90,8 +100,11 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		/* Box Blurring: */
 		final long blurStartTime = System.currentTimeMillis();
 
-		this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], this.mBlurSize));
-		this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], this.mBlurSize));
+		final int blurSize = this.mBlurSize;
+		if (blurSize > 1) {
+			this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], blurSize));
+			this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], blurSize));
+		}
 
 		final long blurEndTime = System.currentTimeMillis();
 
@@ -129,9 +142,10 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 			final int inputGreen = ((inputARGB >> 8) & 0xFF);
 			final int inputBlue = (inputARGB & 0xFF);
 
-			final int outputRed = Math.max(0, Math.min(255, Math.round(inputRed + amplificationRed * deltaRed)));
-			final int outputGreen = Math.max(0, Math.min(255, Math.round(inputGreen + amplificationGreen * deltaGreen)));
-			final int outputBlue = Math.max(0, Math.min(255, Math.round(inputBlue + amplificationBlue * deltaBlue)));
+			// TODO Make Math.abs configurable through UI.
+			final int outputRed = Math.max(0, Math.min(255, Math.round(inputRed + (amplificationRed * deltaRed))));
+			final int outputGreen = Math.max(0, Math.min(255, Math.round(inputGreen + (amplificationGreen * deltaGreen))));
+			final int outputBlue = Math.max(0, Math.min(255, Math.round(inputBlue + (amplificationBlue * deltaBlue))));
 
 			outputRenderFrameBuffer[i] = (outputRed << 16) | (outputGreen << 8) | (outputBlue);
 		}
