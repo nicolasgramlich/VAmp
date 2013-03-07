@@ -88,11 +88,12 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		final int[] outputRenderFrameBuffer = this.mRenderFrameBuffer;
 
 		/* Box Blurring: */
-		final long startTime = System.currentTimeMillis();
+		final long blurStartTime = System.currentTimeMillis();
+
 		this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], this.mBlurSize));
 		this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], this.mBlurSize));
-		final long endTime = System.currentTimeMillis();
-//		System.out.println("Blurring took: " + (endTime - startTime) + "ms");
+
+		final long blurEndTime = System.currentTimeMillis();
 
 		/* Reference frame: */
 		final int pixelCount = this.mInputRenderFrameBuffer.length;
@@ -102,6 +103,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		}
 
 		/* Amplifcation: */
+		final long amplificationStartTime = System.currentTimeMillis();
+
 		final float amplificationRed = this.mAmplificationRed;
 		final float amplificationGreen = this.mAmplificationGreen;
 		final float amplificationBlue = this.mAmplificationBlue;
@@ -132,6 +135,9 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 			outputRenderFrameBuffer[i] = (outputRed << 16) | (outputGreen << 8) | (outputBlue);
 		}
+		final long amplificationEndTime = System.currentTimeMillis();
+
+		System.out.println("Blur: " + (blurEndTime - blurStartTime) + "ms" + "\t\tAmp: " + (amplificationEndTime - amplificationStartTime) + "ms");
 	}
 
 	// ===========================================================
