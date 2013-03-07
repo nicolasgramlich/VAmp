@@ -51,7 +51,7 @@ public class VAmp extends JFrame {
 	private static final int AMPLIFICATION_SLIDER_MIN = AMPLIFICATION_MIN * AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_MAX = AMPLIFICATION_MAX * AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_DEFAULT = Math.round(AMPLIFICATION_DEFAULT * AMPLIFICATION_SLIDER_FACTOR);
-	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 50;
+	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 5 * AMPLIFICATION_SLIDER_FACTOR;
 
 	public static final int BLUR_RADIUS_DEFAULT = 5;
 	public static final int BLUR_RADIUS_MIN = 0;
@@ -170,7 +170,7 @@ public class VAmp extends JFrame {
 				final JSlider blurRadiusSlider = new JSlider(JSlider.HORIZONTAL, BLUR_RADIUS_SLIDER_MIN, BLUR_RADIUS_SLIDER_MAX, BLUR_RADIUS_SLIDER_DEFAULT);
 				final Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
 				for (int i = 0; i <= BLUR_RADIUS_SLIDER_MAX; i += BLUR_RADIUS_SLIDER_LABEL_STEP) {
-					labels.put(i, new JLabel(i + "x"));
+					labels.put(i, new JLabel(i + "px"));
 				}
 				blurRadiusSlider.setLabelTable(labels);
 

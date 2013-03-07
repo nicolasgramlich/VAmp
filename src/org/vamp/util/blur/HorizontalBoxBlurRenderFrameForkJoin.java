@@ -35,7 +35,16 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameFork
 
 	@Override
 	protected ForkJoinTask<?>[] onFork(final int pWindowWidthSplit, final int pWindowHeightSplit) {
-		return new ForkJoinTask[] { new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, pWindowWidthSplit, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize), new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, this.mWindowTop, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize), new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, this.mWindowRight, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize), new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, pWindowHeightSplit, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize) };
+		return new ForkJoinTask[] {
+			/* Top Left: */
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, pWindowWidthSplit, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			/* Top Right: */
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, this.mWindowTop, this.mWindowRight, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			/* Bottom Right: */
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, pWindowHeightSplit, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			/* Bottom Left: */
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, pWindowHeightSplit, pWindowWidthSplit, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize)
+		};
 	}
 
 	@Override
@@ -56,15 +65,13 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameFork
 				final int yBase = y * width;
 
 				final int left = Math.max(x - blurWidthHalf, 0);
-				final int right = Math.min(x + blurWidthHalf, width);
-
-				final int blurWidth = right - left;
+				final int right = Math.min(x + blurWidthHalf, width - 1);
 
 				int r = 0;
 				int g = 0;
 				int b = 0;
 
-				for (int i = left; i < right; i++) {
+				for (int i = left; i <= right; i++) {
 					final int index = i + yBase;
 					final int pixel = inputRenderFrameBuffer[index];
 					r += ((pixel >> 16) & 0xFF);
@@ -72,6 +79,7 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameFork
 					b += ((pixel >> 0) & 0xFF);
 				}
 
+				final int blurWidth = right - left + 1;
 				r = r / blurWidth;
 				g = g / blurWidth;
 				b = b / blurWidth;

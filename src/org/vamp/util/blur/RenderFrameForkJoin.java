@@ -57,7 +57,7 @@ public abstract class RenderFrameForkJoin extends RecursiveAction {
 	@Override
 	protected void compute() {
 		if (this.shouldFork()) {
-			onFork();
+			this.onFork();
 		} else {
 			this.onCompute();
 		}

@@ -43,7 +43,7 @@ public abstract class BoxBlurRenderFrameForkJoin extends RenderFrameForkJoin {
 		final int windowWidth = this.mWindowRight - this.mWindowLeft;
 		final int windowHeight = this.mWindowBottom - this.mWindowTop;
 
-		return windowWidth * windowHeight < TRESHOLD;
+		return windowWidth * windowHeight > TRESHOLD;
 	}
 
 	// ===========================================================

@@ -100,10 +100,15 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		/* Box Blurring: */
 		final long blurStartTime = System.currentTimeMillis();
 
+		int[] blurredInputRenderFrameBuffer;
 		final int blurSize = this.mBlurSize;
 		if (blurSize > 1) {
 			this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], blurSize));
 			this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], blurSize));
+
+			blurredInputRenderFrameBuffer = tempRenderFrameBuffers[1];
+		} else {
+			blurredInputRenderFrameBuffer = inputRenderFrameBuffer;
 		}
 
 		final long blurEndTime = System.currentTimeMillis();
@@ -112,10 +117,10 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		final int pixelCount = this.mInputRenderFrameBuffer.length;
 		if (this.mReferenceRenderFrameBufferInitialized == false) {
 			this.mReferenceRenderFrameBufferInitialized = true;
-			System.arraycopy(tempRenderFrameBuffers[1], 0, referenceRenderFrameBuffer, 0, pixelCount);
+			System.arraycopy(blurredInputRenderFrameBuffer, 0, referenceRenderFrameBuffer, 0, pixelCount);
 		}
 
-		/* Amplifcation: */
+		/* Amplification: */
 		final long amplificationStartTime = System.currentTimeMillis();
 
 		final float amplificationRed = this.mAmplificationRed;
@@ -128,7 +133,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 			final int referenceGreen = ((referenceARGB >> 8) & 0xFF);
 			final int referenceBlue = (referenceARGB & 0xFF);
 
-			final int tempARGB = tempRenderFrameBuffers[1][i];
+			final int tempARGB = blurredInputRenderFrameBuffer[i];
 			final int tempRed = ((tempARGB >> 16) & 0xFF);
 			final int tempGreen = ((tempARGB >> 8) & 0xFF);
 			final int tempBlue = (tempARGB & 0xFF);
@@ -142,7 +147,6 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 			final int inputGreen = ((inputARGB >> 8) & 0xFF);
 			final int inputBlue = (inputARGB & 0xFF);
 
-			// TODO Make Math.abs configurable through UI.
 			final int outputRed = Math.max(0, Math.min(255, Math.round(inputRed + (amplificationRed * deltaRed))));
 			final int outputGreen = Math.max(0, Math.min(255, Math.round(inputGreen + (amplificationGreen * deltaGreen))));
 			final int outputBlue = Math.max(0, Math.min(255, Math.round(inputBlue + (amplificationBlue * deltaBlue))));
