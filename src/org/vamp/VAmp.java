@@ -43,24 +43,24 @@ public class VAmp extends JFrame {
 	private static final int HEIGHT = 352;
 
 	public static final int AMPLIFICATION_MIN = 0;
-	public static final int AMPLIFICATION_MAX = 25;
-	public static final float AMPLIFICATION_DEFAULT = 2.5f;
+	public static final int AMPLIFICATION_MAX = 50;
+	public static final float AMPLIFICATION_DEFAULT = 5f;
 
 	private static final int AMPLIFICATION_SLIDER_FACTOR = 10;
 
 	private static final int AMPLIFICATION_SLIDER_MIN = AMPLIFICATION_MIN * AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_MAX = AMPLIFICATION_MAX * AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_DEFAULT = Math.round(AMPLIFICATION_DEFAULT * AMPLIFICATION_SLIDER_FACTOR);
-	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 5 * AMPLIFICATION_SLIDER_FACTOR;
+	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 10 * AMPLIFICATION_SLIDER_FACTOR;
 
-	public static final int BLUR_RADIUS_DEFAULT = 5;
 	public static final int BLUR_RADIUS_MIN = 0;
-	public static final int BLUR_RADIUS_MAX = 25;
+	public static final int BLUR_RADIUS_MAX = 50;
+	public static final int BLUR_RADIUS_DEFAULT = 5;
 
 	private static final int BLUR_RADIUS_SLIDER_MIN = BLUR_RADIUS_MIN;
 	private static final int BLUR_RADIUS_SLIDER_MAX = BLUR_RADIUS_MAX;
 	private static final int BLUR_RADIUS_SLIDER_DEFAULT = BLUR_RADIUS_DEFAULT;
-	private static final int BLUR_RADIUS_SLIDER_LABEL_STEP = 5;
+	private static final int BLUR_RADIUS_SLIDER_LABEL_STEP = 10;
 
 	// ===========================================================
 	// Fields

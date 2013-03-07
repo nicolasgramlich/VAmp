@@ -138,9 +138,9 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 			final int tempGreen = ((tempARGB >> 8) & 0xFF);
 			final int tempBlue = (tempARGB & 0xFF);
 
-			final int deltaRed = Math.abs(referenceRed - tempRed);
-			final int deltaGreen = Math.abs(referenceGreen - tempGreen);
-			final int deltaBlue = Math.abs(referenceBlue - tempBlue);
+			final int deltaRed = referenceRed - tempRed;
+			final int deltaGreen = referenceGreen - tempGreen;
+			final int deltaBlue = referenceBlue - tempBlue;
 
 			final int inputARGB = inputRenderFrameBuffer[i];
 			final int inputRed = ((inputARGB >> 16) & 0xFF);
