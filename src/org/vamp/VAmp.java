@@ -45,7 +45,7 @@ public class VAmp extends JFrame {
 
 	public static final int AMPLIFICATION_MIN = 0;
 	public static final int AMPLIFICATION_MAX = 50;
-	public static final float AMPLIFICATION_DEFAULT = 10;
+	public static final float AMPLIFICATION_DEFAULT = 5;
 
 	private static final int AMPLIFICATION_SLIDER_FACTOR = 10;
 
@@ -65,7 +65,7 @@ public class VAmp extends JFrame {
 
 	public static final int FREQUENCY_MIN = 0;
 	public static final int FREQUENCY_MAX = 30;
-	public static final float FREQUENCY_DEFAULT = 2;
+	public static final float FREQUENCY_DEFAULT = 1.5f;
 
 	private static final int FREQUENCY_SLIDER_FACTOR = 10;
 
@@ -174,10 +174,19 @@ public class VAmp extends JFrame {
 
 		this.mMediaPlayer.setRepeat(true);
 		this.mMediaPlayer.playMedia(pMediaFilename);
+
 		this.mMediaPlayer.addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
 			@Override
 			public void timeChanged(final MediaPlayer pMediaPlayer, final long pTime) {
-// System.out.println(pTime);
+//				System.out.println(pTime);
+			}
+
+			@Override
+			public void mediaMetaChanged(MediaPlayer pMediaPlayer, int pMetaType) {
+				final float videoFPS = VAmp.this.mMediaPlayer.getFps();
+
+				VAmp.this.mInputRenderFramePanel.setVideoFPS(videoFPS);
+				VAmp.this.mOutputRenderFramePanel.setVideoFPS(videoFPS);
 			}
 		});
 

@@ -1,7 +1,5 @@
 package org.vamp.ui;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 
@@ -18,6 +16,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 	private static final long serialVersionUID = 4599100470001576167L;
 
+	private static final int REFERENCE_RENDER_FRAME_BUFFER_COUNT = 100;
+
 	// ===========================================================
 	// Fields
 	// ===========================================================
@@ -25,8 +25,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	protected final BufferedImage mInputRenderFrame;
 	protected final int[] mInputRenderFrameBuffer;
 
-	protected boolean mReferenceRenderFrameBufferInitialized;
-	protected final int[] mReferenceRenderFrameBuffer;
+	protected int mReferenceRenderFrameIndex = 0;
+	protected final int[][] mReferenceRenderFrameBuffers = new int[REFERENCE_RENDER_FRAME_BUFFER_COUNT][];
 	protected final int[][] mTempRenderFrameBuffers = new int[2][];
 
 	protected float mAmplificationRed = VAmp.AMPLIFICATION_DEFAULT;
@@ -51,20 +51,15 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		this.mInputRenderFrame = pInputRenderFrame;
 		this.mInputRenderFrameBuffer = ((DataBufferInt) this.mInputRenderFrame.getRaster().getDataBuffer()).getData();
 
-		this.mReferenceRenderFrameBuffer = new int[this.mInputRenderFrameBuffer.length];
+		for (int i = 0; i < this.mReferenceRenderFrameBuffers.length; i++) {
+			this.mReferenceRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
+		}
 
 		for (int i = 0; i < this.mTempRenderFrameBuffers.length; i++) {
 			this.mTempRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
 		}
 
 		this.mForkJoinPool = new ForkJoinPool();
-
-		this.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(final MouseEvent pMouseEvent) {
-				OutputRenderFramePanel.this.mReferenceRenderFrameBufferInitialized = false;
-			}
-		});
 	}
 
 	// ===========================================================
@@ -79,8 +74,6 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 	public void setBlurRadius(final int pBlurRadius) {
 		this.mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(pBlurRadius);
-
-		this.mReferenceRenderFrameBufferInitialized = false;
 	}
 
 	public void setFrequency(final float pFrequency) {
@@ -106,7 +99,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	public void notifyInputRenderFrameChanged() {
 		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
 		final int[][] tempRenderFrameBuffers = this.mTempRenderFrameBuffers;
-		final int[] referenceRenderFrameBuffer = this.mReferenceRenderFrameBuffer;
+		final int[][] referenceRenderFrameBuffers = this.mReferenceRenderFrameBuffers;
 		final int[] outputRenderFrameBuffer = this.mRenderFrameBuffer;
 
 		/* Box Blurring: */
@@ -130,12 +123,9 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 //		if (true)
 //			return;
 
-		/* Reference frame: */
+		/* Store the current blurred frame as a reference frame: */
 		final int pixelCount = this.mInputRenderFrameBuffer.length;
-		if (this.mReferenceRenderFrameBufferInitialized == false) {
-			this.mReferenceRenderFrameBufferInitialized = true;
-			System.arraycopy(blurredInputRenderFrameBuffer, 0, referenceRenderFrameBuffer, 0, pixelCount);
-		}
+		System.arraycopy(blurredInputRenderFrameBuffer, 0, referenceRenderFrameBuffers[this.mReferenceRenderFrameIndex], 0, pixelCount);
 
 		/* Amplification: */
 		final long amplificationStartTime = System.currentTimeMillis();
@@ -144,6 +134,9 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		final float amplificationRed = this.mAmplificationRed;
 		final float amplificationGreen = this.mAmplificationGreen;
 		final float amplificationBlue = this.mAmplificationBlue;
+
+		final int referenceRenderFrameBufferIndex = this.calculateReferenceFrameBufferIndex();
+		final int[] referenceRenderFrameBuffer = referenceRenderFrameBuffers[referenceRenderFrameBufferIndex];
 
 		for (int i = pixelCount - 1; i >= 0; i--) {
 			final int referenceARGB = referenceRenderFrameBuffer[i];
@@ -183,6 +176,30 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		final long amplificationEndTime = System.currentTimeMillis();
 
 		System.out.println("Blur: " + (blurEndTime - blurStartTime) + "ms" + "\t\tAmp: " + (amplificationEndTime - amplificationStartTime) + "ms");
+
+		this.mReferenceRenderFrameIndex++;
+		this.mReferenceRenderFrameIndex %= REFERENCE_RENDER_FRAME_BUFFER_COUNT;
+	}
+
+	private int calculateReferenceFrameBufferIndex() {
+		final float videoFPS = this.mVideoFPS;
+		final float frequency = this.mFrequency;
+
+		final int frameOffset;
+		if (frequency == 0) {
+			frameOffset = REFERENCE_RENDER_FRAME_BUFFER_COUNT - 1;
+		} else {
+			frameOffset = Math.min(Math.round(videoFPS / frequency), REFERENCE_RENDER_FRAME_BUFFER_COUNT - 1);
+		}
+
+		int referenceRenderFrameBufferIndex = this.mReferenceRenderFrameIndex - frameOffset;
+		if (referenceRenderFrameBufferIndex < 0) {
+			referenceRenderFrameBufferIndex += REFERENCE_RENDER_FRAME_BUFFER_COUNT;
+		}
+		if (referenceRenderFrameBufferIndex < 0) {
+			throw new IllegalStateException();
+		}
+		return referenceRenderFrameBufferIndex;
 	}
 
 	// ===========================================================

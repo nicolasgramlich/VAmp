@@ -23,6 +23,7 @@ public abstract class RenderFramePanel extends JPanel {
 	protected final int[] mRenderFrameBuffer;
 
 	protected Dimension mVideoDimension;
+	protected float mVideoFPS;
 
 	// ===========================================================
 	// Constructors
@@ -40,6 +41,10 @@ public abstract class RenderFramePanel extends JPanel {
 
 	public void setVideoDimension(final int pVideoWidth, final int pVideoHeight) {
 		this.mVideoDimension = new Dimension(pVideoWidth, pVideoHeight);
+	}
+
+	public void setVideoFPS(final float pVideoFPS) {
+		this.mVideoFPS = pVideoFPS;
 	}
 
 	// ===========================================================
