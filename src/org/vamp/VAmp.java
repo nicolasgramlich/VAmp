@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage;
 import java.util.Hashtable;
 
 import javax.swing.BorderFactory;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -72,6 +73,8 @@ public class VAmp extends JFrame {
 	private static final int FREQUENCY_SLIDER_MAX = VAmp.FREQUENCY_MAX * VAmp.FREQUENCY_SLIDER_FACTOR;
 	private static final int FREQUENCY_SLIDER_DEFAULT = Math.round(VAmp.FREQUENCY_DEFAULT * VAmp.FREQUENCY_SLIDER_FACTOR);
 	private static final int FREQUENCY_SLIDER_LABEL_STEP = 10 * VAmp.FREQUENCY_SLIDER_FACTOR;
+
+	public static final boolean AMPLIFICATION_ABSOLUTE_DEFAULT = false;
 
 	// ===========================================================
 	// Fields
@@ -163,7 +166,20 @@ public class VAmp extends JFrame {
 						VAmp.this.mOutputRenderFramePanel.setAmplification(amplification, amplification, amplification);
 					}
 				});
+
+				final JCheckBox amplificationAbsoluteCheckbox = new JCheckBox("Absolute", AMPLIFICATION_ABSOLUTE_DEFAULT);
+				amplificationAbsoluteCheckbox.setToolTipText("<html>Take the absolute of the amplification delta instead of the signed amplification delta.<br/>The output image will appear brighter and the effect may or may not be better visible.</html>");
+
+				amplificationAbsoluteCheckbox.addChangeListener(new ChangeListener() {
+					@Override
+					public void stateChanged(final ChangeEvent pChangeEvent) {
+						final boolean amplificationAbsolute = amplificationAbsoluteCheckbox.isSelected();
+						VAmp.this.mOutputRenderFramePanel.setAmplificationAbsolute(amplificationAbsolute);
+					}
+				});
+
 				amplificationPanel.add(amplificationSlider);
+				amplificationPanel.add(amplificationAbsoluteCheckbox);
 			}
 
 			final JPanel blurRadiusPanel = new JPanel(new FlowLayout());
@@ -192,6 +208,7 @@ public class VAmp extends JFrame {
 						VAmp.this.mOutputRenderFramePanel.setBlurRadius(blurRadius);
 					}
 				});
+
 				blurRadiusPanel.add(blurRadiusSlider);
 			}
 
@@ -221,6 +238,7 @@ public class VAmp extends JFrame {
 						VAmp.this.mOutputRenderFramePanel.setFrequency(frequency);
 					}
 				});
+
 				frequencyPanel.add(frequencySlider);
 			}
 

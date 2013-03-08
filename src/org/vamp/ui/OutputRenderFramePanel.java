@@ -37,6 +37,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 	protected int mFrequency = Math.round(VAmp.FREQUENCY_DEFAULT);
 
+	protected boolean mAmplificationAbsolute = VAmp.AMPLIFICATION_ABSOLUTE_DEFAULT;
+
 	protected final ForkJoinPool mForkJoinPool;
 
 	// ===========================================================
@@ -85,6 +87,10 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		this.mFrequency = Math.round(pFrequency);
 	}
 
+	public void setAmplificationAbsolute(final boolean pAmplificationAbsolute) {
+		this.mAmplificationAbsolute = pAmplificationAbsolute;
+	}
+
 	// ===========================================================
 	// Methods for/from SuperClass/Interfaces
 	// ===========================================================
@@ -129,6 +135,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		/* Amplification: */
 		final long amplificationStartTime = System.currentTimeMillis();
 
+		final boolean amplificationAbsolute = this.mAmplificationAbsolute;
 		final float amplificationRed = this.mAmplificationRed;
 		final float amplificationGreen = this.mAmplificationGreen;
 		final float amplificationBlue = this.mAmplificationBlue;
@@ -144,9 +151,18 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 			final int tempGreen = ((tempARGB >> 8) & 0xFF);
 			final int tempBlue = (tempARGB & 0xFF);
 
-			final int deltaRed = referenceRed - tempRed;
-			final int deltaGreen = referenceGreen - tempGreen;
-			final int deltaBlue = referenceBlue - tempBlue;
+			final int deltaRed;
+			final int deltaGreen;
+			final int deltaBlue;
+			if (amplificationAbsolute) {
+				deltaRed = Math.abs(referenceRed - tempRed);
+				deltaGreen = Math.abs(referenceGreen - tempGreen);
+				deltaBlue = Math.abs(referenceBlue - tempBlue);
+			} else {
+				deltaRed = referenceRed - tempRed;
+				deltaGreen = referenceGreen - tempGreen;
+				deltaBlue = referenceBlue - tempBlue;
+			}
 
 			final int inputARGB = inputRenderFrameBuffer[i];
 			final int inputRed = ((inputARGB >> 16) & 0xFF);
