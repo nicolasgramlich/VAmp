@@ -35,6 +35,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 	protected int mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(VAmp.BLUR_RADIUS_DEFAULT);
 
+	protected int mFrequency = Math.round(VAmp.FREQUENCY_DEFAULT);
+
 	protected final ForkJoinPool mForkJoinPool;
 
 	// ===========================================================
@@ -77,6 +79,10 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		this.mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(pBlurRadius);
 
 		this.mReferenceRenderFrameBufferInitialized = false;
+	}
+
+	public void setFrequency(final float pFrequency) {
+		this.mFrequency = Math.round(pFrequency);
 	}
 
 	// ===========================================================

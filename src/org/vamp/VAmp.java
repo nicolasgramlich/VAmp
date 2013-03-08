@@ -12,11 +12,11 @@ import java.awt.image.BufferedImage;
 import java.util.Hashtable;
 
 import javax.swing.BorderFactory;
-import javax.swing.Icon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.SwingConstants;
 import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -44,23 +44,34 @@ public class VAmp extends JFrame {
 
 	public static final int AMPLIFICATION_MIN = 0;
 	public static final int AMPLIFICATION_MAX = 50;
-	public static final float AMPLIFICATION_DEFAULT = 5f;
+	public static final float AMPLIFICATION_DEFAULT = 10;
 
 	private static final int AMPLIFICATION_SLIDER_FACTOR = 10;
 
-	private static final int AMPLIFICATION_SLIDER_MIN = AMPLIFICATION_MIN * AMPLIFICATION_SLIDER_FACTOR;
-	private static final int AMPLIFICATION_SLIDER_MAX = AMPLIFICATION_MAX * AMPLIFICATION_SLIDER_FACTOR;
-	private static final int AMPLIFICATION_SLIDER_DEFAULT = Math.round(AMPLIFICATION_DEFAULT * AMPLIFICATION_SLIDER_FACTOR);
-	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 10 * AMPLIFICATION_SLIDER_FACTOR;
+	private static final int AMPLIFICATION_SLIDER_MIN = VAmp.AMPLIFICATION_MIN * VAmp.AMPLIFICATION_SLIDER_FACTOR;
+	private static final int AMPLIFICATION_SLIDER_MAX = VAmp.AMPLIFICATION_MAX * VAmp.AMPLIFICATION_SLIDER_FACTOR;
+	private static final int AMPLIFICATION_SLIDER_DEFAULT = Math.round(VAmp.AMPLIFICATION_DEFAULT * VAmp.AMPLIFICATION_SLIDER_FACTOR);
+	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 10 * VAmp.AMPLIFICATION_SLIDER_FACTOR;
 
 	public static final int BLUR_RADIUS_MIN = 0;
 	public static final int BLUR_RADIUS_MAX = 50;
 	public static final int BLUR_RADIUS_DEFAULT = 5;
 
-	private static final int BLUR_RADIUS_SLIDER_MIN = BLUR_RADIUS_MIN;
-	private static final int BLUR_RADIUS_SLIDER_MAX = BLUR_RADIUS_MAX;
-	private static final int BLUR_RADIUS_SLIDER_DEFAULT = BLUR_RADIUS_DEFAULT;
+	private static final int BLUR_RADIUS_SLIDER_MIN = VAmp.BLUR_RADIUS_MIN;
+	private static final int BLUR_RADIUS_SLIDER_MAX = VAmp.BLUR_RADIUS_MAX;
+	private static final int BLUR_RADIUS_SLIDER_DEFAULT = VAmp.BLUR_RADIUS_DEFAULT;
 	private static final int BLUR_RADIUS_SLIDER_LABEL_STEP = 10;
+
+	public static final int FREQUENCY_MIN = 0;
+	public static final int FREQUENCY_MAX = 30;
+	public static final float FREQUENCY_DEFAULT = 2;
+
+	private static final int FREQUENCY_SLIDER_FACTOR = 10;
+
+	private static final int FREQUENCY_SLIDER_MIN = VAmp.FREQUENCY_MIN * VAmp.FREQUENCY_SLIDER_FACTOR;
+	private static final int FREQUENCY_SLIDER_MAX = VAmp.FREQUENCY_MAX * VAmp.FREQUENCY_SLIDER_FACTOR;
+	private static final int FREQUENCY_SLIDER_DEFAULT = Math.round(VAmp.FREQUENCY_DEFAULT * VAmp.FREQUENCY_SLIDER_FACTOR);
+	private static final int FREQUENCY_SLIDER_LABEL_STEP = 10 * VAmp.FREQUENCY_SLIDER_FACTOR;
 
 	// ===========================================================
 	// Fields
@@ -86,7 +97,7 @@ public class VAmp extends JFrame {
 		final BufferedImage inputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
 		inputFrame.setAccelerationPriority(1.0f);
 
-		/* Create the output frame buffer that our results will be displayed in: */ 
+		/* Create the output frame buffer that our results will be displayed in: */
 		final BufferedImage outputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
 		outputFrame.setAccelerationPriority(1.0f);
 
@@ -108,7 +119,6 @@ public class VAmp extends JFrame {
 			final JPanel inputRenderFramePanelContainer = new JPanel(new GridLayout());
 			{
 				inputRenderFramePanelContainer.setBorder(BorderFactory.createTitledBorder("Input:"));
-
 				inputRenderFramePanelContainer.add(this.mInputRenderFramePanel);
 			}
 			centerPanel.add(inputRenderFramePanelContainer);
@@ -116,7 +126,6 @@ public class VAmp extends JFrame {
 			final JPanel outputRenderFramePanelContainer = new JPanel(new GridLayout());
 			{
 				outputRenderFramePanelContainer.setBorder(BorderFactory.createTitledBorder("Output:"));
-
 				outputRenderFramePanelContainer.add(this.mOutputRenderFramePanel);
 			}
 			centerPanel.add(outputRenderFramePanelContainer);
@@ -130,46 +139,41 @@ public class VAmp extends JFrame {
 
 			final JPanel amplificationPanel = new JPanel(new FlowLayout());
 			{
-				final TitledBorder amplificationPanelBorder = BorderFactory.createTitledBorder("Amplification:");
+				final TitledBorder amplificationPanelBorder = BorderFactory.createTitledBorder("Amplification: " + String.valueOf(VAmp.AMPLIFICATION_DEFAULT) + "x");
 				amplificationPanel.setBorder(amplificationPanelBorder);
 
-				final JLabel amplificationSliderLabel = new JLabel(String.valueOf(AMPLIFICATION_DEFAULT) + "x", (Icon)null, 0);
-
-				final JSlider amplificationSlider = new JSlider(JSlider.HORIZONTAL, AMPLIFICATION_SLIDER_MIN, AMPLIFICATION_SLIDER_MAX, AMPLIFICATION_SLIDER_DEFAULT);
+				final JSlider amplificationSlider = new JSlider(SwingConstants.HORIZONTAL, VAmp.AMPLIFICATION_SLIDER_MIN, VAmp.AMPLIFICATION_SLIDER_MAX, VAmp.AMPLIFICATION_SLIDER_DEFAULT);
 				final Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
-				for (int i = 0; i <= AMPLIFICATION_SLIDER_MAX; i += AMPLIFICATION_SLIDER_LABEL_STEP) {
-					labels.put(i, new JLabel((i / AMPLIFICATION_SLIDER_FACTOR) + "x"));
+				for (int i = 0; i <= VAmp.AMPLIFICATION_SLIDER_MAX; i += VAmp.AMPLIFICATION_SLIDER_LABEL_STEP) {
+					labels.put(i, new JLabel((i / VAmp.AMPLIFICATION_SLIDER_FACTOR) + "x"));
 				}
 				amplificationSlider.setLabelTable(labels);
 
-				amplificationSlider.setMajorTickSpacing(10);
+				amplificationSlider.setMajorTickSpacing(10 * VAmp.AMPLIFICATION_SLIDER_FACTOR);
 				amplificationSlider.setPaintLabels(true);
-				amplificationSlider.setMinorTickSpacing(1);
+				amplificationSlider.setMinorTickSpacing(1 * VAmp.AMPLIFICATION_SLIDER_FACTOR);
 				amplificationSlider.setPaintTicks(true);
 
 				amplificationSlider.addChangeListener(new ChangeListener() {
-					public void stateChanged(ChangeEvent pChangeEvent) {
-//					if(!amplificationSlider.getValueIsAdjusting()) {
-						final float amplification = ((float)amplificationSlider.getValue() / AMPLIFICATION_SLIDER_FACTOR);
-						amplificationSliderLabel.setText(String.valueOf(amplification) + "x");
-						mOutputRenderFramePanel.setAmplification(amplification, amplification, amplification);
-//					}
+					@Override
+					public void stateChanged(final ChangeEvent pChangeEvent) {
+						final float amplification = ((float) amplificationSlider.getValue() / VAmp.AMPLIFICATION_SLIDER_FACTOR);
+						amplificationPanelBorder.setTitle("Amplification: " + String.valueOf(amplification) + "x");
+						amplificationPanel.repaint();
+						VAmp.this.mOutputRenderFramePanel.setAmplification(amplification, amplification, amplification);
 					}
 				});
 				amplificationPanel.add(amplificationSlider);
-				amplificationPanel.add(amplificationSliderLabel);
 			}
 
-			final JPanel blurPanel = new JPanel(new FlowLayout());
+			final JPanel blurRadiusPanel = new JPanel(new FlowLayout());
 			{
-				final TitledBorder blurPanelBorder = BorderFactory.createTitledBorder("Blur-Radius:");
-				blurPanel.setBorder(blurPanelBorder);
+				final TitledBorder blurRadiusPanelBorder = BorderFactory.createTitledBorder("Blur-Radius: " + String.valueOf(VAmp.BLUR_RADIUS_DEFAULT) + "px");
+				blurRadiusPanel.setBorder(blurRadiusPanelBorder);
 
-				final JLabel blurRadiusSliderLabel = new JLabel(String.valueOf(BLUR_RADIUS_DEFAULT) + "px", (Icon)null, 0);
-
-				final JSlider blurRadiusSlider = new JSlider(JSlider.HORIZONTAL, BLUR_RADIUS_SLIDER_MIN, BLUR_RADIUS_SLIDER_MAX, BLUR_RADIUS_SLIDER_DEFAULT);
+				final JSlider blurRadiusSlider = new JSlider(SwingConstants.HORIZONTAL, VAmp.BLUR_RADIUS_SLIDER_MIN, VAmp.BLUR_RADIUS_SLIDER_MAX, VAmp.BLUR_RADIUS_SLIDER_DEFAULT);
 				final Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
-				for (int i = 0; i <= BLUR_RADIUS_SLIDER_MAX; i += BLUR_RADIUS_SLIDER_LABEL_STEP) {
+				for (int i = 0; i <= VAmp.BLUR_RADIUS_SLIDER_MAX; i += VAmp.BLUR_RADIUS_SLIDER_LABEL_STEP) {
 					labels.put(i, new JLabel(i + "px"));
 				}
 				blurRadiusSlider.setLabelTable(labels);
@@ -180,20 +184,49 @@ public class VAmp extends JFrame {
 				blurRadiusSlider.setPaintTicks(true);
 
 				blurRadiusSlider.addChangeListener(new ChangeListener() {
-					public void stateChanged(ChangeEvent pChangeEvent) {
-//					if(!blurSlider.getValueIsAdjusting()) {
+					@Override
+					public void stateChanged(final ChangeEvent pChangeEvent) {
 						final int blurRadius = blurRadiusSlider.getValue();
-						blurRadiusSliderLabel.setText(String.valueOf(blurRadius) + "px");
-						mOutputRenderFramePanel.setBlurRadius(blurRadius);
-//					}
+						blurRadiusPanelBorder.setTitle("Blur-Radius: " + String.valueOf(blurRadius) + "px");
+						blurRadiusPanel.repaint();
+						VAmp.this.mOutputRenderFramePanel.setBlurRadius(blurRadius);
 					}
 				});
-				blurPanel.add(blurRadiusSlider);
-				blurPanel.add(blurRadiusSliderLabel);
+				blurRadiusPanel.add(blurRadiusSlider);
+			}
+
+			final JPanel frequencyPanel = new JPanel(new FlowLayout());
+			{
+				final TitledBorder frequencyPanelBorder = BorderFactory.createTitledBorder("Frequency: " + String.valueOf(VAmp.FREQUENCY_DEFAULT) + "Hz");
+				frequencyPanel.setBorder(frequencyPanelBorder);
+
+				final JSlider frequencySlider = new JSlider(SwingConstants.HORIZONTAL, VAmp.FREQUENCY_SLIDER_MIN, VAmp.FREQUENCY_SLIDER_MAX, VAmp.FREQUENCY_SLIDER_DEFAULT);
+				final Hashtable<Integer, JLabel> labels = new Hashtable<Integer, JLabel>();
+				for (int i = 0; i <= VAmp.FREQUENCY_SLIDER_MAX; i += VAmp.FREQUENCY_SLIDER_LABEL_STEP) {
+					labels.put(i, new JLabel((i / VAmp.FREQUENCY_SLIDER_FACTOR) + "Hz"));
+				}
+				frequencySlider.setLabelTable(labels);
+
+				frequencySlider.setMajorTickSpacing(5 * VAmp.FREQUENCY_SLIDER_FACTOR);
+				frequencySlider.setPaintLabels(true);
+				frequencySlider.setMinorTickSpacing(1 * VAmp.FREQUENCY_SLIDER_FACTOR);
+				frequencySlider.setPaintTicks(true);
+
+				frequencySlider.addChangeListener(new ChangeListener() {
+					@Override
+					public void stateChanged(final ChangeEvent pChangeEvent) {
+						final float frequency = ((float) frequencySlider.getValue() / VAmp.FREQUENCY_SLIDER_FACTOR);
+						frequencyPanelBorder.setTitle("Frequency: " + String.valueOf(frequency) + "Hz");
+						frequencyPanel.repaint();
+						VAmp.this.mOutputRenderFramePanel.setFrequency(frequency);
+					}
+				});
+				frequencyPanel.add(frequencySlider);
 			}
 
 			controlsPanel.add(amplificationPanel);
-			controlsPanel.add(blurPanel);
+			controlsPanel.add(blurRadiusPanel);
+			controlsPanel.add(frequencyPanel);
 		}
 		contentPane.add(controlsPanel, BorderLayout.NORTH);
 
@@ -211,7 +244,7 @@ public class VAmp extends JFrame {
 		this.mMediaPlayer = this.mMediaPlayerFactory.newDirectMediaPlayer(new BufferFormatCallback() {
 			@Override
 			public BufferFormat getBufferFormat(final int pSourceWidth, final int pSourceHeight) {
-				/* Let the RenderFramePanels know about the dimension of the video (for aspect ratio): */ 
+				/* Let the RenderFramePanels know about the dimension of the video (for aspect ratio): */
 				VAmp.this.mInputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
 				VAmp.this.mOutputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
 
