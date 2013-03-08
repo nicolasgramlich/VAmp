@@ -125,6 +125,11 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 
 		final long blurEndTime = System.currentTimeMillis();
 
+//		System.out.println("Blur: " + (blurEndTime - blurStartTime) + "ms");
+//		System.arraycopy(blurredInputRenderFrameBuffer, 0, outputRenderFrameBuffer, 0, tempRenderFrameBuffers[0].length);
+//		if (true)
+//			return;
+
 		/* Reference frame: */
 		final int pixelCount = this.mInputRenderFrameBuffer.length;
 		if (this.mReferenceRenderFrameBufferInitialized == false) {
