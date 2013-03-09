@@ -6,8 +6,11 @@ import java.awt.image.DataBufferInt;
 import jsr166y.ForkJoinPool;
 
 import org.vamp.VAmp;
-import org.vamp.util.blur.HorizontalBoxBlurRenderFrameForkJoin;
-import org.vamp.util.blur.VerticalBoxBlurRenderFrameForkJoin;
+import org.vamp.util.blur.BlurMode;
+import org.vamp.util.blur.box.HorizontalBoxBlurRenderFrameForkJoin;
+import org.vamp.util.blur.box.VerticalBoxBlurRenderFrameForkJoin;
+import org.vamp.util.blur.gaussian.HorizontalGaussianBlurRenderFrameForkJoin;
+import org.vamp.util.blur.gaussian.VerticalGaussianBlurRenderFrameForkJoin;
 
 public class OutputRenderFramePanel extends RenderFramePanel {
 	// ===========================================================
@@ -33,7 +36,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	protected float mAmplificationGreen = VAmp.AMPLIFICATION_DEFAULT;
 	protected float mAmplificationBlue = VAmp.AMPLIFICATION_DEFAULT;
 
-	protected int mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(VAmp.BLUR_RADIUS_DEFAULT);
+	protected int mBlurRadius = VAmp.BLUR_RADIUS_DEFAULT;
+	protected BlurMode mBlurMode = VAmp.BLUR_MODE_DEFAULT;
 
 	protected int mFrequency = Math.round(VAmp.FREQUENCY_DEFAULT);
 
@@ -73,7 +77,11 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	}
 
 	public void setBlurRadius(final int pBlurRadius) {
-		this.mBlurSize = OutputRenderFramePanel.convertBlurRadiusToBlurSize(pBlurRadius);
+		this.mBlurRadius = pBlurRadius;
+	}
+
+	public void setBlurMode(final BlurMode pBlurMode) {
+		this.mBlurMode = pBlurMode;
 	}
 
 	public void setFrequency(final float pFrequency) {
@@ -92,10 +100,6 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// Methods
 	// ===========================================================
 
-	private static int convertBlurRadiusToBlurSize(final int pBlurRadius) {
-		return (2 * pBlurRadius) + 1;
-	}
-
 	public void notifyInputRenderFrameChanged() {
 		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
 		final int[][] tempRenderFrameBuffers = this.mTempRenderFrameBuffers;
@@ -106,10 +110,20 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		final long blurStartTime = System.currentTimeMillis();
 
 		int[] blurredInputRenderFrameBuffer;
-		final int blurSize = this.mBlurSize;
-		if (blurSize > 1) {
-			this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], blurSize));
-			this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], blurSize));
+		final int blurRadius = this.mBlurRadius;
+		if (blurRadius > 1) {
+			switch (this.mBlurMode) {
+				case BOX:
+					this.mForkJoinPool.invoke(new HorizontalBoxBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], blurRadius));
+					this.mForkJoinPool.invoke(new VerticalBoxBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], blurRadius));
+					break;
+				case GAUSSIAN:
+					this.mForkJoinPool.invoke(new HorizontalGaussianBlurRenderFrameForkJoin(inputRenderFrameBuffer, this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[0], blurRadius));
+					this.mForkJoinPool.invoke(new VerticalGaussianBlurRenderFrameForkJoin(tempRenderFrameBuffers[0], this.mRenderFrame.getWidth(), this.mRenderFrame.getHeight(), tempRenderFrameBuffers[1], blurRadius));
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected " + BlurMode.class.getSimpleName() + ": '" + this.mBlurMode + "'.");
+			}
 
 			blurredInputRenderFrameBuffer = tempRenderFrameBuffers[1];
 		} else {
@@ -117,11 +131,6 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		}
 
 		final long blurEndTime = System.currentTimeMillis();
-
-//		System.out.println("Blur: " + (blurEndTime - blurStartTime) + "ms");
-//		System.arraycopy(blurredInputRenderFrameBuffer, 0, outputRenderFrameBuffer, 0, tempRenderFrameBuffers[0].length);
-//		if (true)
-//			return;
 
 		/* Store the current blurred frame as a reference frame: */
 		final int pixelCount = this.mInputRenderFrameBuffer.length;

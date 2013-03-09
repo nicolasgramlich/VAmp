@@ -1,8 +1,8 @@
-package org.vamp.util.blur;
+package org.vamp.util.blur.box;
 
 import jsr166y.ForkJoinTask;
 
-public class VerticalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoin {
+public class VerticalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameForkJoin {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -37,19 +37,19 @@ public class VerticalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoin 
 	protected ForkJoinTask<?>[] onFork(final int pWindowWidthSplit, final int pWindowHeightSplit) {
 		return new ForkJoinTask[] {
 			/* Top Left: */
-			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, pWindowWidthSplit, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, pWindowWidthSplit, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurRadius),
 			/* Top Right: */
-			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, this.mWindowTop, this.mWindowRight, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, this.mWindowTop, this.mWindowRight, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurRadius),
 			/* Bottom Right: */
-			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, pWindowHeightSplit, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, pWindowHeightSplit, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurRadius),
 			/* Bottom Left: */
-			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, pWindowHeightSplit, pWindowWidthSplit, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize)
+			new VerticalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, pWindowHeightSplit, pWindowWidthSplit, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurRadius)
 		};
 	}
 
 	@Override
 	protected void onCompute() {
-		final int blurHeightHalf = (this.mBlurSize - 1) / 2;
+		final int blurRadius = this.mBlurRadius;
 
 		final int windowLeft = this.mWindowLeft;
 		final int windowRight = this.mWindowRight;
@@ -63,8 +63,8 @@ public class VerticalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoin 
 
 		for (int x = windowLeft; x < windowRight; x++) {
 			for (int y = windowTop; y < windowBottom; y++) {
-				final int top = Math.max(y - blurHeightHalf, 0);
-				final int bottom = Math.min(y + blurHeightHalf, height - 1);
+				final int top = Math.max(y - blurRadius, 0);
+				final int bottom = Math.min(y + blurRadius, height - 1);
 
 				int r = 0;
 				int g = 0;

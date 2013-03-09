@@ -1,8 +1,8 @@
-package org.vamp.util.blur;
+package org.vamp.util.blur.box;
 
 import jsr166y.ForkJoinTask;
 
-public class HorizontalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoin {
+public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameForkJoin {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -17,12 +17,12 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoi
 	// Constructors
 	// ===========================================================
 
-	public HorizontalBoxBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int[] pOutputRenderFrameBuffer, final int pBlurSize) {
-		super(pInputRenderFrameBuffer, pWidth, pHeight, pOutputRenderFrameBuffer, pBlurSize);
+	public HorizontalBoxBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int[] pOutputRenderFrameBuffer, final int pBlurRadius) {
+		super(pInputRenderFrameBuffer, pWidth, pHeight, pOutputRenderFrameBuffer, pBlurRadius);
 	}
 
-	public HorizontalBoxBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int pWindowLeft, final int pWindowTop, final int pWindowRight, final int pWindowBottom, final int[] pOutputRenderFrameBuffer, final int pBlurWidth) {
-		super(pInputRenderFrameBuffer, pWidth, pHeight, pWindowLeft, pWindowTop, pWindowRight, pWindowBottom, pOutputRenderFrameBuffer, pBlurWidth);
+	public HorizontalBoxBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int pWindowLeft, final int pWindowTop, final int pWindowRight, final int pWindowBottom, final int[] pOutputRenderFrameBuffer, final int pBlurRadius) {
+		super(pInputRenderFrameBuffer, pWidth, pHeight, pWindowLeft, pWindowTop, pWindowRight, pWindowBottom, pOutputRenderFrameBuffer, pBlurRadius);
 	}
 
 	// ===========================================================
@@ -37,19 +37,19 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoi
 	protected ForkJoinTask<?>[] onFork(final int pWindowWidthSplit, final int pWindowHeightSplit) {
 		return new ForkJoinTask[] {
 			/* Top Left: */
-			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, pWindowWidthSplit, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, this.mWindowTop, pWindowWidthSplit, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurRadius),
 			/* Top Right: */
-			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, this.mWindowTop, this.mWindowRight, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, this.mWindowTop, this.mWindowRight, pWindowHeightSplit, this.mOutputRenderFrameBuffer, this.mBlurRadius),
 			/* Bottom Right: */
-			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, pWindowHeightSplit, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize),
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, pWindowWidthSplit, pWindowHeightSplit, this.mWindowRight, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurRadius),
 			/* Bottom Left: */
-			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, pWindowHeightSplit, pWindowWidthSplit, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurSize)
+			new HorizontalBoxBlurRenderFrameForkJoin(this.mInputRenderFrameBuffer, this.mWidth, this.mHeight, this.mWindowLeft, pWindowHeightSplit, pWindowWidthSplit, this.mWindowBottom, this.mOutputRenderFrameBuffer, this.mBlurRadius)
 		};
 	}
 
 	@Override
 	protected void onCompute() {
-		final int blurWidthHalf = (this.mBlurSize - 1) / 2;
+		final int blurRadius = this.mBlurRadius;
 
 		final int windowLeft = this.mWindowLeft;
 		final int windowRight = this.mWindowRight;
@@ -64,8 +64,8 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoi
 			for (int y = windowTop; y < windowBottom; y++) {
 				final int yBase = y * width;
 
-				final int left = Math.max(x - blurWidthHalf, 0);
-				final int right = Math.min(x + blurWidthHalf, width - 1);
+				final int left = Math.max(x - blurRadius, 0);
+				final int right = Math.min(x + blurRadius, width - 1);
 
 				int r = 0;
 				int g = 0;

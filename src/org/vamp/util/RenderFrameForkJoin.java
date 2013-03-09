@@ -1,4 +1,4 @@
-package org.vamp.util.blur;
+package org.vamp.util;
 
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
@@ -9,6 +9,8 @@ public abstract class RenderFrameForkJoin extends RecursiveAction {
 	// ===========================================================
 
 	private static final long serialVersionUID = 6720752963103551309L;
+
+	private static int TRESHOLD = 100 * 100;
 
 	// ===========================================================
 	// Fields
@@ -50,7 +52,6 @@ public abstract class RenderFrameForkJoin extends RecursiveAction {
 	// Methods for/from SuperClass/Interfaces
 	// ===========================================================
 
-	protected abstract boolean shouldFork();
 	protected abstract void onCompute();
 	protected abstract ForkJoinTask<?>[] onFork(final int pWindowWidthSplit, final int pWindowHeightSplit);
 
@@ -61,6 +62,17 @@ public abstract class RenderFrameForkJoin extends RecursiveAction {
 		} else {
 			this.onCompute();
 		}
+	}
+
+	// ===========================================================
+	// Methods
+	// ===========================================================
+
+	protected boolean shouldFork() {
+		final int windowWidth = this.mWindowRight - this.mWindowLeft;
+		final int windowHeight = this.mWindowBottom - this.mWindowTop;
+
+		return windowWidth * windowHeight > TRESHOLD;
 	}
 
 	private void onFork() {
@@ -77,10 +89,6 @@ public abstract class RenderFrameForkJoin extends RecursiveAction {
 
 		ForkJoinTask.invokeAll(forks);
 	}
-
-	// ===========================================================
-	// Methods
-	// ===========================================================
 
 	// ===========================================================
 	// Inner and Anonymous Classes

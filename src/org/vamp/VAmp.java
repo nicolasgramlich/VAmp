@@ -34,6 +34,7 @@ import javax.swing.event.ChangeListener;
 import org.vamp.ui.InputRenderFramePanel;
 import org.vamp.ui.OutputRenderFramePanel;
 import org.vamp.ui.WrapLayout;
+import org.vamp.util.blur.BlurMode;
 
 import uk.co.caprica.vlcj.player.MediaPlayer;
 import uk.co.caprica.vlcj.player.MediaPlayerEventAdapter;
@@ -65,6 +66,8 @@ public class VAmp extends JFrame {
 	private static final int AMPLIFICATION_SLIDER_MAX = VAmp.AMPLIFICATION_MAX * VAmp.AMPLIFICATION_SLIDER_FACTOR;
 	private static final int AMPLIFICATION_SLIDER_DEFAULT = Math.round(VAmp.AMPLIFICATION_DEFAULT * VAmp.AMPLIFICATION_SLIDER_FACTOR);
 	private static final int AMPLIFICATION_SLIDER_LABEL_STEP = 10 * VAmp.AMPLIFICATION_SLIDER_FACTOR;
+
+	public static final BlurMode BLUR_MODE_DEFAULT = BlurMode.GAUSSIAN;
 
 	public static final int BLUR_RADIUS_MIN = 0;
 	public static final int BLUR_RADIUS_MAX = 50;
@@ -497,9 +500,35 @@ public class VAmp extends JFrame {
 				}
 			});
 
-			// TODO Add "gaussian"/"box" blur checkbox
+			final JCheckBox blurModeCheckbox;
+			switch (VAmp.BLUR_MODE_DEFAULT) {
+				case GAUSSIAN:
+					blurModeCheckbox = new JCheckBox("Gaussian", true);
+					break;
+				case BOX:
+					blurModeCheckbox = new JCheckBox("Box", false);
+					break;
+				default:
+					throw new IllegalArgumentException("Unexpected " + BlurMode.class.getSimpleName() + ": '" + VAmp.BLUR_MODE_DEFAULT + "'.");
+			}
+			blurModeCheckbox.addItemListener(new ItemListener() {
+				@Override
+				public void itemStateChanged(final ItemEvent pItemEvent) {
+					switch (pItemEvent.getStateChange()) {
+						case ItemEvent.SELECTED:
+							blurModeCheckbox.setText("Gaussian");
+							VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.GAUSSIAN);
+							break;
+						case ItemEvent.DESELECTED:
+							blurModeCheckbox.setText("Box");
+							VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.BOX);
+							break;
+					} 
+				}
+			});
 
 			this.mBlurRadiusPanel.add(blurRadiusSlider);
+			this.mBlurRadiusPanel.add(blurModeCheckbox);
 		}
 	}
 
