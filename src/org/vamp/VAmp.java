@@ -18,12 +18,14 @@ import java.io.IOException;
 import java.util.Hashtable;
 
 import javax.swing.BorderFactory;
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JRadioButton;
 import javax.swing.JSlider;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
@@ -500,27 +502,31 @@ public class VAmp extends JFrame {
 				}
 			});
 
-			final JCheckBox blurModeCheckbox;
-			switch (VAmp.BLUR_MODE_DEFAULT) {
-				case GAUSSIAN:
-					blurModeCheckbox = new JCheckBox("Gaussian", true);
-					break;
-				case BOX:
-					blurModeCheckbox = new JCheckBox("Box", false);
-					break;
-				default:
-					throw new IllegalArgumentException("Unexpected " + BlurMode.class.getSimpleName() + ": '" + VAmp.BLUR_MODE_DEFAULT + "'.");
-			}
-			blurModeCheckbox.addItemListener(new ItemListener() {
+			final JPanel blurModePanel = new JPanel(new GridLayout(2, 1));
+			final ButtonGroup blurModeButtonGroup = new ButtonGroup();
+
+			final JRadioButton gaussianBlurModeRadioButton = new JRadioButton("Gaussian", VAmp.BLUR_MODE_DEFAULT == BlurMode.GAUSSIAN);
+			blurModeButtonGroup.add(gaussianBlurModeRadioButton);
+			blurModePanel.add(gaussianBlurModeRadioButton);
+			gaussianBlurModeRadioButton.addItemListener(new ItemListener() {
 				@Override
 				public void itemStateChanged(final ItemEvent pItemEvent) {
 					switch (pItemEvent.getStateChange()) {
 						case ItemEvent.SELECTED:
-							blurModeCheckbox.setText("Gaussian");
 							VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.GAUSSIAN);
 							break;
-						case ItemEvent.DESELECTED:
-							blurModeCheckbox.setText("Box");
+					} 
+				}
+			});
+
+			final JRadioButton boxBlurModeRadioButton = new JRadioButton("Box", VAmp.BLUR_MODE_DEFAULT == BlurMode.BOX);
+			blurModeButtonGroup.add(boxBlurModeRadioButton);
+			blurModePanel.add(boxBlurModeRadioButton);
+			boxBlurModeRadioButton.addItemListener(new ItemListener() {
+				@Override
+				public void itemStateChanged(final ItemEvent pItemEvent) {
+					switch (pItemEvent.getStateChange()) {
+						case ItemEvent.SELECTED:
 							VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.BOX);
 							break;
 					} 
@@ -528,7 +534,7 @@ public class VAmp extends JFrame {
 			});
 
 			this.mBlurRadiusPanel.add(blurRadiusSlider);
-			this.mBlurRadiusPanel.add(blurModeCheckbox);
+			this.mBlurRadiusPanel.add(blurModePanel);
 		}
 	}
 
