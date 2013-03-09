@@ -47,7 +47,7 @@ public abstract class GaussianBlurRenderFrameForkJoin extends BlurRenderFrameFor
 	// ===========================================================
 
 	public static float[] makeKernel(final int pRadius) {
-		final float sigma = pRadius / 3;
+		final float sigma = pRadius / 3f;
 		final float sigmaSquared2 = 2 * sigma * sigma;
 		final float sqrtSigmaPi2 = (float) Math.sqrt(2 * Math.PI * sigma);
 		final float radiusSquared = pRadius * pRadius;
