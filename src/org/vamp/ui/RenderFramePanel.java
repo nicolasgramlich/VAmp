@@ -93,6 +93,8 @@ public abstract class RenderFramePanel extends JPanel {
 
 		/* Simple frame to make it look a little nicer: */
 		graphics2D.drawRect(drawX, drawY, drawWidth - 1, drawHeight - 1);
+
+		// TODO Option do draw reference grid.
 	}
 
 	// ===========================================================
