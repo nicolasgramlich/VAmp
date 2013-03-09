@@ -44,12 +44,18 @@ public class Main {
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
-
-				final String mediaFilename = pArgs[0];
-
-				final String[] vlcArgs = new String[(pArgs.length - 1) + 1];
-				System.arraycopy(pArgs, 1, vlcArgs, 0, pArgs.length - 1);
-				vlcArgs[vlcArgs.length - 1] = "--no-video-title-show";
+				final String mediaFilename;
+				final String[] vlcArgs;
+				if (pArgs.length == 0) {
+					mediaFilename = "";
+					vlcArgs = new String[] { "--no-video-title-show" };
+				} else {
+					mediaFilename = pArgs[0];
+	
+					vlcArgs = new String[(pArgs.length - 1) + 1];
+					System.arraycopy(pArgs, 1, vlcArgs, 0, pArgs.length - 1);
+					vlcArgs[vlcArgs.length - 1] = "--no-video-title-show";
+				}
 
 				final VAmp vamp = new VAmp(mediaFilename, vlcArgs);
 

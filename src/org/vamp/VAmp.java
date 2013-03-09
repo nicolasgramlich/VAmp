@@ -6,13 +6,21 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.Hashtable;
 
 import javax.swing.BorderFactory;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -83,17 +91,32 @@ public class VAmp extends JFrame {
 	// Fields
 	// ===========================================================
 
-	private final String mMediaFilename;
+	private final String[] mVLCArgs;
+	private String mMediaFilename;
+	private final JFileChooser mMediaFileChooser = new JFileChooser();
 
 	private final MediaPlayerFactory mMediaPlayerFactory;
 
-	private final DirectMediaPlayer mMediaPlayer;
+	private DirectMediaPlayer mMediaPlayer;
+
+	private final BufferedImage mInputFrame;
+	private final BufferedImage mOutputFrame;
 
 	private final InputRenderFramePanel mInputRenderFramePanel;
 	private final OutputRenderFramePanel mOutputRenderFramePanel;
 
-	private final RenderFrameCallback mRenderFrameCallback;
+	private final BufferFormatCallback mBufferFormatCallback = new BufferFormatCallback() {
+		@Override
+		public BufferFormat getBufferFormat(final int pSourceWidth, final int pSourceHeight) {
+			/* Let the RenderFramePanels know about the dimension of the video (for aspect ratio): */
+			VAmp.this.mInputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
+			VAmp.this.mOutputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
 
+			return new RV32BufferFormat(VAmp.WIDTH, VAmp.HEIGHT);
+		}
+	};
+
+	private JPanel mMediaPanel;
 	private JPanel mFramePanel;
 	private JPanel mAmplificationPanel;
 	private JPanel mBlurRadiusPanel;
@@ -101,6 +124,16 @@ public class VAmp extends JFrame {
 
 	private JSlider mFrameSlider;
 	private boolean mFrameSliderIsChangedProgramatically;
+
+	private JCheckBox mCameraCheckbox;
+	private boolean mCameraCheckboxIsChangedProgramatically;
+
+	private MediaPlayerEventAdapter mMediaPlayerEventAdapter = new MediaPlayerEventAdapter() {
+		@Override
+		public void mediaMetaChanged(final MediaPlayer pMediaPlayer, final int pMetaType) {
+			VAmp.this.onMediaMetaChanged(pMediaPlayer, pMetaType);
+		}
+	};
 
 	// ===========================================================
 	// Constructors
@@ -110,21 +143,28 @@ public class VAmp extends JFrame {
 		super("VAmp");
 
 		this.mMediaFilename = pMediaFilename;
+		this.mVLCArgs = pVLCArgs;
 
-		/* Create to input frame buffer that VLC will render into: */
-		final BufferedImage inputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
-		inputFrame.setAccelerationPriority(1.0f);
+		this.mMediaFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		try {
+			final File file = new File(new File(".").getCanonicalPath());
+			this.mMediaFileChooser.setCurrentDirectory(file);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 
-		/* Create the output frame buffer that our results will be displayed in: */
-		final BufferedImage outputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
-		outputFrame.setAccelerationPriority(1.0f);
+		this.mInputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
+		this.mInputFrame.setAccelerationPriority(1.0f);
+
+		this.mOutputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
+		this.mOutputFrame.setAccelerationPriority(1.0f);
 
 		/* Create the input render frame panel that will display the input frame buffer: */
-		this.mInputRenderFramePanel = new InputRenderFramePanel(inputFrame);
+		this.mInputRenderFramePanel = new InputRenderFramePanel(this.mInputFrame);
 		this.mInputRenderFramePanel.setPreferredSize(new Dimension(VAmp.WIDTH, VAmp.HEIGHT));
 
 		/* Create the output render frame panel that will display the output frame buffer: */
-		this.mOutputRenderFramePanel = new OutputRenderFramePanel(outputFrame, inputFrame);
+		this.mOutputRenderFramePanel = new OutputRenderFramePanel(this.mOutputFrame, this.mInputFrame);
 		this.mOutputRenderFramePanel.setPreferredSize(new Dimension(VAmp.WIDTH, VAmp.HEIGHT));
 
 		final Container contentPane = this.getContentPane();
@@ -155,11 +195,13 @@ public class VAmp extends JFrame {
 			final TitledBorder controlsPanelBorder = BorderFactory.createTitledBorder("Controls:");
 			controlsPanel.setBorder(controlsPanelBorder);
 
+			this.createMediaPanel();
 			this.createFramePanel();
 			this.createAmplificationPanel();
 			this.createBlurRadiusPanel();
 			this.createFrequencyPanel();
 
+			controlsPanel.add(this.mMediaPanel);
 			controlsPanel.add(this.mFramePanel);
 			controlsPanel.add(this.mAmplificationPanel);
 			controlsPanel.add(this.mBlurRadiusPanel);
@@ -168,70 +210,83 @@ public class VAmp extends JFrame {
 		contentPane.add(controlsPanel, BorderLayout.NORTH);
 
 		/* Create the VLC media objects that will in the end play the video and render into the input frame buffer: */
-		this.mMediaPlayerFactory = new MediaPlayerFactory(pVLCArgs);
-		this.mRenderFrameCallback = new RenderFrameCallback(inputFrame) {
-			@Override
-			protected void onDisplay(final DirectMediaPlayer pDirectMediaPlayer, final int[] pARGBBuffer) {
-				VAmp.this.onFrame();
-			}
-		};
-
-		this.mMediaPlayer = this.mMediaPlayerFactory.newDirectMediaPlayer(new BufferFormatCallback() {
-			@Override
-			public BufferFormat getBufferFormat(final int pSourceWidth, final int pSourceHeight) {
-				/* Let the RenderFramePanels know about the dimension of the video (for aspect ratio): */
-				VAmp.this.mInputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
-				VAmp.this.mOutputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
-
-				return new RV32BufferFormat(VAmp.WIDTH, VAmp.HEIGHT);
-			}
-		}, this.mRenderFrameCallback);
-
-		this.mMediaPlayer.setRepeat(true);
-		this.mMediaPlayer.playMedia(this.mMediaFilename);
-
-		this.mMediaPlayer.addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
-			@Override
-			public void mediaMetaChanged(final MediaPlayer pMediaPlayer, final int pMetaType) {
-				final float fps = VAmp.this.mMediaPlayer.getFps();
-
-				VAmp.this.mInputRenderFramePanel.setVideoFPS(fps);
-				VAmp.this.mOutputRenderFramePanel.setVideoFPS(fps);
-
-				final long length = VAmp.this.mMediaPlayer.getLength();
-				final int frames = Math.round(length / MILLISECONDS_PER_SECOND * fps);
-				if (frames > 0 && fps > 0) {
-					SwingUtilities.invokeLater(new Runnable() {
-						@Override
-						public void run() {
-							final int desiredMajorTicks = (int)(frames / fps);
-							final int majorTicks = Math.min(desiredMajorTicks, 6);
-	
-							final int majorTickSpacing = (int)Math.round(fps) * (int)Math.ceil((float)desiredMajorTicks / majorTicks);
-							final int minorTickSpacing = majorTickSpacing / 3;
-	
-							VAmp.this.mFrameSlider.setMajorTickSpacing(majorTickSpacing);
-							VAmp.this.mFrameSlider.setMinorTickSpacing(minorTickSpacing);
-							VAmp.this.mFrameSlider.setLabelTable(VAmp.this.mFrameSlider.createStandardLabels(majorTickSpacing));
-							VAmp.this.mFrameSlider.setMaximum(frames);
-							VAmp.this.mFrameSlider.repaint();
-						}
-					});
-				}
-			}
-		});
+		this.mMediaPlayerFactory = new MediaPlayerFactory(this.mVLCArgs);
+		this.playMedia(this.mMediaFilename);
 
 		this.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(final WindowEvent pWindowEvent) {
-				VAmp.this.mMediaPlayer.release();
+				if (VAmp.this.mMediaPlayer != null) {
+					VAmp.this.mMediaPlayer.release();
+				}
 				VAmp.this.mMediaPlayerFactory.release();
 				System.exit(0);
 			}
 		});
 	}
 
-	protected void onFrame() {
+	private void playMedia(final String pMediaFilename) {
+		final RenderFrameCallback renderFrameCallback = new RenderFrameCallback(this.mInputFrame) {
+			@Override
+			protected void onDisplay(final DirectMediaPlayer pDirectMediaPlayer, final int[] pARGBBuffer) {
+				VAmp.this.onFrame();
+			}
+		};
+
+		this.mMediaPlayer = this.mMediaPlayerFactory.newDirectMediaPlayer(this.mBufferFormatCallback, renderFrameCallback);
+
+		this.mMediaPlayer.setRepeat(true);
+
+		this.mMediaPlayer.playMedia(pMediaFilename);
+
+		this.mMediaPlayer.addMediaPlayerEventListener(this.mMediaPlayerEventAdapter);
+	}
+
+	private void onMediaMetaChanged(final MediaPlayer pMediaPlayer, final int pMetaType) {
+		final float fps = pMediaPlayer.getFps();
+
+		VAmp.this.mInputRenderFramePanel.setVideoFPS(fps);
+		VAmp.this.mOutputRenderFramePanel.setVideoFPS(fps);
+
+		final long length = pMediaPlayer.getLength();
+		final int frames = Math.round(length / MILLISECONDS_PER_SECOND * fps);
+		if (frames > 0 && fps > 0) {
+			SwingUtilities.invokeLater(new Runnable() {
+				@Override
+				public void run() {
+					// TODO Refactor a little:
+					final int desiredMajorTicks = (int)(frames / fps);
+					final int majorTicks = Math.min(desiredMajorTicks, 6);
+
+					final int majorTickSpacing = (int)Math.round(fps) * (int)Math.ceil((float)desiredMajorTicks / majorTicks);
+					final int minorTickSpacing = majorTickSpacing / 3;
+
+					VAmp.this.mFrameSlider.setMajorTickSpacing(majorTickSpacing);
+					VAmp.this.mFrameSlider.setMinorTickSpacing(minorTickSpacing);
+					VAmp.this.mFrameSlider.setLabelTable(VAmp.this.mFrameSlider.createStandardLabels(majorTickSpacing));
+					VAmp.this.mFrameSlider.setMaximum(frames);
+					VAmp.this.mFrameSlider.repaint();
+				}
+			});
+		}
+	}
+
+	private void stopMedia() {
+		if (this.mMediaPlayer != null) {
+			this.mMediaPlayer.setRepeat(false);
+			this.mMediaPlayer.removeMediaPlayerEventListener(this.mMediaPlayerEventAdapter);
+
+			this.mMediaPlayer.pause();
+
+//			this.mMediaPlayer.stop();
+
+			this.mMediaPlayer.release();
+
+			this.mMediaPlayer = null;
+		}
+	}
+
+	private void onFrame() {
 		final float fps = this.mMediaPlayer.getFps();
 		final long time = this.mMediaPlayer.getTime();
 		final int frame = Math.round(time / MILLISECONDS_PER_SECOND * fps);
@@ -252,6 +307,27 @@ public class VAmp extends JFrame {
 		VAmp.this.mOutputRenderFramePanel.repaint();
 	}
 
+	private void setFrame(final int pFrame) {
+		if (VAmp.this.mMediaPlayer != null) {
+			final float fps = VAmp.this.mMediaPlayer.getFps();
+			final long length = VAmp.this.mMediaPlayer.getLength();
+			final int frames = Math.round(length / MILLISECONDS_PER_SECOND * fps);
+			final long time = Math.round(fps * pFrame);
+
+			VAmp.this.updateFrameTitledBorder(pFrame, frames);
+
+			if (!VAmp.this.mFrameSliderIsChangedProgramatically) {
+				if (!VAmp.this.mFrameSlider.getValueIsAdjusting()) {
+					if (time > length) {
+						VAmp.this.mMediaPlayer.setTime(length);
+					} else {
+						VAmp.this.mMediaPlayer.setTime(time);
+					}
+				}
+			}
+		}
+	}
+
 	// ===========================================================
 	// Getter & Setter
 	// ===========================================================
@@ -264,6 +340,58 @@ public class VAmp extends JFrame {
 	// Methods
 	// ===========================================================
 
+	private void createMediaPanel() {
+		this.mMediaPanel = new JPanel(new FlowLayout());
+		{
+			final TitledBorder mediaPanelBorder = BorderFactory.createTitledBorder("Media:");
+			this.mMediaPanel.setBorder(mediaPanelBorder);
+
+			final JButton browseMediaFileButton = new JButton("Browse");
+			browseMediaFileButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					final int result = VAmp.this.mMediaFileChooser.showOpenDialog(VAmp.this);
+
+					if (result == JFileChooser.APPROVE_OPTION) {
+						VAmp.this.stopMedia();
+						final File selectedFile = VAmp.this.mMediaFileChooser.getSelectedFile();
+						VAmp.this.mMediaFilename = selectedFile.getAbsolutePath();
+						VAmp.this.playMedia(VAmp.this.mMediaFilename);
+
+						VAmp.this.mCameraCheckboxIsChangedProgramatically = true;
+						VAmp.this.mCameraCheckbox.setSelected(false);
+						VAmp.this.mCameraCheckboxIsChangedProgramatically = false;
+					}
+				}
+			});
+
+			this.mCameraCheckbox = new JCheckBox("Camera", false);
+			this.mCameraCheckbox.addItemListener(new ItemListener() {
+				@Override
+				public void itemStateChanged(final ItemEvent pItemEvent) {
+					if (!VAmp.this.mCameraCheckboxIsChangedProgramatically) {
+						switch (pItemEvent.getStateChange()) {
+							case ItemEvent.SELECTED:
+								VAmp.this.stopMedia();
+								VAmp.this.playMedia("qtcapture://");
+								VAmp.this.mOutputRenderFramePanel.setVideoFPS(30);
+								VAmp.this.mOutputRenderFramePanel.setVideoFPSFixed(true);
+								break;
+							case ItemEvent.DESELECTED:
+								VAmp.this.stopMedia();
+								VAmp.this.mOutputRenderFramePanel.setVideoFPSFixed(false);
+								VAmp.this.playMedia(VAmp.this.mMediaFilename);
+								break;
+						}
+					}
+				}
+			});
+
+			this.mMediaPanel.add(browseMediaFileButton);
+			this.mMediaPanel.add(mCameraCheckbox);
+		}
+	}
+
 	private void createFramePanel() {
 		this.mFramePanel = new JPanel(new FlowLayout());
 		{
@@ -271,7 +399,7 @@ public class VAmp extends JFrame {
 			this.mFramePanel.setBorder(framePanelBorder);
 			this.updateFrameTitledBorder(0, 0);
 
-			this.mFrameSlider = new JSlider(SwingConstants.HORIZONTAL, 0, 60, 0);
+			this.mFrameSlider = new JSlider(SwingConstants.HORIZONTAL, 0, 30, 0);
 
 			this.mFrameSlider.setPaintLabels(true);
 			this.mFrameSlider.setPaintTicks(true);
@@ -283,18 +411,7 @@ public class VAmp extends JFrame {
 				public void stateChanged(final ChangeEvent pChangeEvent) {
 					final int frame = VAmp.this.mFrameSlider.getValue();
 
-					final float fps = VAmp.this.mMediaPlayer.getFps();
-					final long length = VAmp.this.mMediaPlayer.getLength();
-					final int frames = Math.round(length / MILLISECONDS_PER_SECOND * fps);
-
-					VAmp.this.updateFrameTitledBorder(frame, frames);
-
-					if (!VAmp.this.mFrameSliderIsChangedProgramatically) {
-						if (!VAmp.this.mFrameSlider.getValueIsAdjusting()) {
-							final long time = Math.round(fps * frame);
-							VAmp.this.mMediaPlayer.setTime(time);
-						}
-					}
+					VAmp.this.setFrame(frame);
 				}
 			});
 
@@ -333,11 +450,16 @@ public class VAmp extends JFrame {
 			final JCheckBox amplificationAbsoluteCheckbox = new JCheckBox("Absolute", VAmp.AMPLIFICATION_ABSOLUTE_DEFAULT);
 			amplificationAbsoluteCheckbox.setToolTipText("<html>Take the absolute of the amplification delta instead of the signed amplification delta.<br/>The output image will appear brighter and the effect may or may not be better visible.</html>");
 
-			amplificationAbsoluteCheckbox.addChangeListener(new ChangeListener() {
+			amplificationAbsoluteCheckbox.addItemListener(new ItemListener() {
 				@Override
-				public void stateChanged(final ChangeEvent pChangeEvent) {
-					final boolean amplificationAbsolute = amplificationAbsoluteCheckbox.isSelected();
-					VAmp.this.mOutputRenderFramePanel.setAmplificationAbsolute(amplificationAbsolute);
+				public void itemStateChanged(final ItemEvent pItemEvent) {
+					switch (pItemEvent.getStateChange()) {
+						case ItemEvent.SELECTED:
+						case ItemEvent.DESELECTED:
+							final boolean amplificationAbsolute = amplificationAbsoluteCheckbox.isSelected();
+							VAmp.this.mOutputRenderFramePanel.setAmplificationAbsolute(amplificationAbsolute);
+							break;
+					} 
 				}
 			});
 
@@ -373,6 +495,8 @@ public class VAmp extends JFrame {
 					VAmp.this.mOutputRenderFramePanel.setBlurRadius(blurRadius);
 				}
 			});
+
+			// TODO Add "gaussian"/"box" blur checkbox
 
 			this.mBlurRadiusPanel.add(blurRadiusSlider);
 		}
