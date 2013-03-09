@@ -33,6 +33,7 @@ import javax.swing.event.ChangeListener;
 
 import org.vamp.ui.InputRenderFramePanel;
 import org.vamp.ui.OutputRenderFramePanel;
+import org.vamp.ui.WrapLayout;
 
 import uk.co.caprica.vlcj.player.MediaPlayer;
 import uk.co.caprica.vlcj.player.MediaPlayerEventAdapter;
@@ -190,7 +191,7 @@ public class VAmp extends JFrame {
 		}
 		contentPane.add(centerPanel, BorderLayout.CENTER);
 
-		final JPanel controlsPanel = new JPanel(new FlowLayout());
+		final JPanel controlsPanel = new JPanel(new WrapLayout());
 		{
 			final TitledBorder controlsPanelBorder = BorderFactory.createTitledBorder("Controls:");
 			controlsPanel.setBorder(controlsPanelBorder);
