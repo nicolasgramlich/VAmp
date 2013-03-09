@@ -78,10 +78,10 @@ public class VerticalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameForkJo
 					b += ((pixel >> 0) & 0xFF);
 				}
 
-				final int blurHeight = bottom - top + 1;
-				r = r / blurHeight;
-				g = g / blurHeight;
-				b = b / blurHeight;
+				final float blurHeight = bottom - top + 1;
+				r = Math.round(r / blurHeight);
+				g = Math.round(g / blurHeight);
+				b = Math.round(b / blurHeight);
 
 				final int outPixel = (r << 16) | (g << 8) | (b << 0);
 				final int outIndex = x + (y * width);

@@ -79,10 +79,10 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameFork
 					b += ((pixel >> 0) & 0xFF);
 				}
 
-				final int blurWidth = right - left + 1;
-				r = r / blurWidth;
-				g = g / blurWidth;
-				b = b / blurWidth;
+				final float blurWidth = right - left + 1;
+				r = Math.round(r / blurWidth);
+				g = Math.round(g / blurWidth);
+				b = Math.round(b / blurWidth);
 
 				final int outPixel = (r << 16) | (g << 8) | (b << 0);
 				final int outIndex = x + yBase;
