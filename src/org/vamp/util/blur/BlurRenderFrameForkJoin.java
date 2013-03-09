@@ -1,7 +1,7 @@
 package org.vamp.util.blur;
 
 
-public abstract class BoxBlurRenderFrameForkJoin extends RenderFrameForkJoin {
+public abstract class BlurRenderFrameForkJoin extends RenderFrameForkJoin {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -20,11 +20,11 @@ public abstract class BoxBlurRenderFrameForkJoin extends RenderFrameForkJoin {
 	// Constructors
 	// ===========================================================
 
-	public BoxBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int[] pOutputRenderFrameBuffer, final int pBlurSize) {
+	public BlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int[] pOutputRenderFrameBuffer, final int pBlurSize) {
 		this(pInputRenderFrameBuffer, pWidth, pHeight, 0, 0, pWidth, pHeight, pOutputRenderFrameBuffer, pBlurSize);
 	}
 
-	public BoxBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int pWindowLeft, final int pWindowTop, final int pWindowRight, final int pWindowBottom, final int[] pOutputRenderFrameBuffer, final int pBlurWidth) {
+	public BlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int pWindowLeft, final int pWindowTop, final int pWindowRight, final int pWindowBottom, final int[] pOutputRenderFrameBuffer, final int pBlurWidth) {
 		super(pInputRenderFrameBuffer, pWidth, pHeight, pWindowLeft, pWindowTop, pWindowRight, pWindowBottom, pOutputRenderFrameBuffer);
 
 		this.mBlurSize = pBlurWidth;

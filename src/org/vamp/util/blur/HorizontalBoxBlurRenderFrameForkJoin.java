@@ -2,7 +2,7 @@ package org.vamp.util.blur;
 
 import jsr166y.ForkJoinTask;
 
-public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameForkJoin {
+public class HorizontalBoxBlurRenderFrameForkJoin extends BlurRenderFrameForkJoin {
 	// ===========================================================
 	// Constants
 	// ===========================================================
