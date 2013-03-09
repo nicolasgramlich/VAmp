@@ -83,6 +83,8 @@ public class VAmp extends JFrame {
 	// Fields
 	// ===========================================================
 
+	private final String mMediaFilename;
+
 	private final MediaPlayerFactory mMediaPlayerFactory;
 
 	private final DirectMediaPlayer mMediaPlayer;
@@ -106,6 +108,8 @@ public class VAmp extends JFrame {
 
 	public VAmp(final String pMediaFilename, final String[] pVLCArgs) {
 		super("VAmp");
+
+		this.mMediaFilename = pMediaFilename;
 
 		/* Create to input frame buffer that VLC will render into: */
 		final BufferedImage inputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
@@ -184,7 +188,7 @@ public class VAmp extends JFrame {
 		}, this.mRenderFrameCallback);
 
 		this.mMediaPlayer.setRepeat(true);
-		this.mMediaPlayer.playMedia(pMediaFilename);
+		this.mMediaPlayer.playMedia(this.mMediaFilename);
 
 		this.mMediaPlayer.addMediaPlayerEventListener(new MediaPlayerEventAdapter() {
 			@Override
