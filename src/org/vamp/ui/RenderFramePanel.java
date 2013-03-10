@@ -1,5 +1,6 @@
 package org.vamp.ui;
 
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -62,8 +63,23 @@ public abstract class RenderFramePanel extends JPanel {
 	public void paint(final Graphics pGraphics) {
 		super.paint(pGraphics);
 
+		final Graphics2D graphics2D = (Graphics2D) pGraphics;
+
 		if (this.mVideoDimension == null) {
 			/* Video didn't start yet! */
+			final int width = this.getWidth();
+			final int height = this.getHeight();
+
+			graphics2D.setColor(Color.WHITE);
+			graphics2D.fillRect(0, 0, width - 1, height - 1);
+			graphics2D.setColor(Color.BLACK);
+			graphics2D.drawRect(0, 0, width - 1, height - 1);
+
+			final String string = "VAmp";
+			int stringWidth = pGraphics.getFontMetrics().stringWidth(string);
+			int fontDescent = pGraphics.getFontMetrics().getDescent();
+			graphics2D.setPaint(Color.BLACK);
+			graphics2D.drawString(string, (width - stringWidth) * 0.5f, height * 0.5f + fontDescent);
 			return;
 		}
 
@@ -88,10 +104,10 @@ public abstract class RenderFramePanel extends JPanel {
 			drawX = Math.round(0.5f * (this.getWidth() - drawWidth));
 		}
 
-		final Graphics2D graphics2D = (Graphics2D) pGraphics;
 		graphics2D.drawImage(this.mRenderFrame, drawX, drawY, drawWidth, drawHeight, null);
 
 		/* Simple frame to make it look a little nicer: */
+		graphics2D.setColor(Color.BLACK);
 		graphics2D.drawRect(drawX, drawY, drawWidth - 1, drawHeight - 1);
 
 		// TODO Option do draw reference grid.
