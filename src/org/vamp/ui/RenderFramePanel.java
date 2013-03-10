@@ -2,6 +2,7 @@ package org.vamp.ui;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -76,10 +77,14 @@ public abstract class RenderFramePanel extends JPanel {
 			graphics2D.drawRect(0, 0, width - 1, height - 1);
 
 			final String string = "VAmp";
-			int stringWidth = pGraphics.getFontMetrics().stringWidth(string);
-			int fontDescent = pGraphics.getFontMetrics().getDescent();
+
+			final FontMetrics fontMetrics = pGraphics.getFontMetrics();
+			final int stringWidth = fontMetrics.stringWidth(string);
+			final int fontDescent = fontMetrics.getDescent();
+
 			graphics2D.setPaint(Color.BLACK);
-			graphics2D.drawString(string, (width - stringWidth) * 0.5f, height * 0.5f + fontDescent);
+			graphics2D.drawString(string, (width - stringWidth) * 0.5f, (height * 0.5f) + fontDescent);
+
 			return;
 		}
 
