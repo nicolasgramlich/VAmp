@@ -21,8 +21,8 @@ public abstract class RenderFramePanel extends JPanel {
 	// Fields
 	// ===========================================================
 
-	protected final BufferedImage mRenderFrame;
-	protected final int[] mRenderFrameBuffer;
+	protected BufferedImage mRenderFrame;
+	protected int[] mRenderFrameBuffer;
 
 	protected Dimension mVideoDimension;
 	protected float mVideoFPS;
@@ -33,14 +33,24 @@ public abstract class RenderFramePanel extends JPanel {
 	// ===========================================================
 
 	public RenderFramePanel(final BufferedImage pRenderFrame) {
-		this.mRenderFrame = pRenderFrame;
-
-		this.mRenderFrameBuffer = ((DataBufferInt) this.mRenderFrame.getRaster().getDataBuffer()).getData();
+		this.setRenderFrame(pRenderFrame);
 	}
 
 	// ===========================================================
 	// Getter & Setter
 	// ===========================================================
+
+	public void setRenderFrame(final BufferedImage pRenderFrame) {
+		if (pRenderFrame == null) {
+			this.mRenderFrame = null;
+
+			this.mRenderFrameBuffer = null;
+		} else {
+			this.mRenderFrame = pRenderFrame;
+	
+			this.mRenderFrameBuffer = ((DataBufferInt) this.mRenderFrame.getRaster().getDataBuffer()).getData();
+		}
+	}
 
 	public void setVideoDimension(final int pVideoWidth, final int pVideoHeight) {
 		this.mVideoDimension = new Dimension(pVideoWidth, pVideoHeight);

@@ -13,12 +13,16 @@ import java.awt.event.ItemListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferInt;
 import java.io.File;
 import java.io.IOException;
+import java.nio.IntBuffer;
 import java.util.Hashtable;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -33,6 +37,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import org.vamp.recorder.Recorder;
 import org.vamp.ui.InputRenderFramePanel;
 import org.vamp.ui.OutputRenderFramePanel;
 import org.vamp.ui.WrapLayout;
@@ -44,9 +49,12 @@ import uk.co.caprica.vlcj.player.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.direct.BufferFormat;
 import uk.co.caprica.vlcj.player.direct.BufferFormatCallback;
 import uk.co.caprica.vlcj.player.direct.DirectMediaPlayer;
+import uk.co.caprica.vlcj.player.direct.RenderCallback;
 import uk.co.caprica.vlcj.player.direct.format.RV32BufferFormat;
 
-public class VAmp extends JFrame {
+import com.sun.jna.Memory;
+
+public class VAmp extends JFrame implements RenderCallback {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -93,6 +101,8 @@ public class VAmp extends JFrame {
 
 	public static final boolean AMPLIFICATION_ABSOLUTE_DEFAULT = false;
 
+	public static final int FPS_DEFAULT = 30;
+
 	// ===========================================================
 	// Fields
 	// ===========================================================
@@ -101,12 +111,15 @@ public class VAmp extends JFrame {
 	private String mMediaFilename;
 	private final JFileChooser mMediaFileChooser = new JFileChooser();
 
+	private final Recorder mRecorder;
+	private final JFileChooser mRecordFileChooser = new JFileChooser();
+
 	private final MediaPlayerFactory mMediaPlayerFactory;
 
 	private DirectMediaPlayer mMediaPlayer;
 
-	private final BufferedImage mInputFrame;
-	private final BufferedImage mOutputFrame;
+	private BufferedImage mInputRenderFrame;
+	private BufferedImage mOutputRenderFrame;
 
 	private final InputRenderFramePanel mInputRenderFramePanel;
 	private final OutputRenderFramePanel mOutputRenderFramePanel;
@@ -118,7 +131,9 @@ public class VAmp extends JFrame {
 			VAmp.this.mInputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
 			VAmp.this.mOutputRenderFramePanel.setVideoDimension(pSourceWidth, pSourceHeight);
 
-			return new RV32BufferFormat(VAmp.WIDTH, VAmp.HEIGHT);
+			VAmp.this.updateRenderFrames(pSourceWidth, pSourceHeight);
+
+			return new RV32BufferFormat(pSourceWidth, pSourceHeight);
 		}
 	};
 
@@ -127,6 +142,7 @@ public class VAmp extends JFrame {
 	private JPanel mAmplificationPanel;
 	private JPanel mBlurRadiusPanel;
 	private JPanel mFrequencyPanel;
+	private JPanel mRecordPanel;
 
 	private JSlider mFrameSlider;
 	private boolean mFrameSliderIsChangedProgramatically;
@@ -134,7 +150,7 @@ public class VAmp extends JFrame {
 	private JCheckBox mCameraCheckbox;
 	private boolean mCameraCheckboxIsChangedProgramatically;
 
-	private MediaPlayerEventAdapter mMediaPlayerEventAdapter = new MediaPlayerEventAdapter() {
+	private final MediaPlayerEventAdapter mMediaPlayerEventAdapter = new MediaPlayerEventAdapter() {
 		@Override
 		public void mediaMetaChanged(final MediaPlayer pMediaPlayer, final int pMetaType) {
 			VAmp.this.onMediaMetaChanged(pMediaPlayer, pMetaType);
@@ -152,25 +168,24 @@ public class VAmp extends JFrame {
 		this.mVLCArgs = pVLCArgs;
 
 		this.mMediaFileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+		this.mRecordFileChooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
 		try {
 			final File file = new File(new File(".").getCanonicalPath());
 			this.mMediaFileChooser.setCurrentDirectory(file);
-		} catch (IOException e) {
+			this.mRecordFileChooser.setCurrentDirectory(file);
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 
-		this.mInputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
-		this.mInputFrame.setAccelerationPriority(1.0f);
-
-		this.mOutputFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(VAmp.WIDTH, VAmp.HEIGHT);
-		this.mOutputFrame.setAccelerationPriority(1.0f);
+		/* Create recorder: */
+		this.mRecorder = new Recorder(this.mInputRenderFrame, this.mOutputRenderFrame);
 
 		/* Create the input render frame panel that will display the input frame buffer: */
-		this.mInputRenderFramePanel = new InputRenderFramePanel(this.mInputFrame);
+		this.mInputRenderFramePanel = new InputRenderFramePanel(this.mInputRenderFrame);
 		this.mInputRenderFramePanel.setPreferredSize(new Dimension(VAmp.WIDTH, VAmp.HEIGHT));
 
 		/* Create the output render frame panel that will display the output frame buffer: */
-		this.mOutputRenderFramePanel = new OutputRenderFramePanel(this.mOutputFrame, this.mInputFrame);
+		this.mOutputRenderFramePanel = new OutputRenderFramePanel(this.mOutputRenderFrame, this.mInputRenderFrame);
 		this.mOutputRenderFramePanel.setPreferredSize(new Dimension(VAmp.WIDTH, VAmp.HEIGHT));
 
 		final Container contentPane = this.getContentPane();
@@ -206,12 +221,14 @@ public class VAmp extends JFrame {
 			this.createAmplificationPanel();
 			this.createBlurRadiusPanel();
 			this.createFrequencyPanel();
+			this.createRecordPanel();
 
 			controlsPanel.add(this.mMediaPanel);
 			controlsPanel.add(this.mFramePanel);
 			controlsPanel.add(this.mAmplificationPanel);
 			controlsPanel.add(this.mBlurRadiusPanel);
 			controlsPanel.add(this.mFrequencyPanel);
+			controlsPanel.add(this.mRecordPanel);
 		}
 		contentPane.add(controlsPanel, BorderLayout.NORTH);
 
@@ -231,15 +248,24 @@ public class VAmp extends JFrame {
 		});
 	}
 
-	private void playMedia(final String pMediaFilename) {
-		final RenderFrameCallback renderFrameCallback = new RenderFrameCallback(this.mInputFrame) {
-			@Override
-			protected void onDisplay(final DirectMediaPlayer pDirectMediaPlayer, final int[] pARGBBuffer) {
-				VAmp.this.onFrame();
-			}
-		};
+	protected void updateRenderFrames(final int pSourceWidth, final int pSourceHeight) {
+		this.mInputRenderFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(pSourceWidth, pSourceHeight);
+		this.mInputRenderFrame.setAccelerationPriority(1.0f);
 
-		this.mMediaPlayer = this.mMediaPlayerFactory.newDirectMediaPlayer(this.mBufferFormatCallback, renderFrameCallback);
+		this.mOutputRenderFrame = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration().createCompatibleImage(pSourceWidth, pSourceHeight);
+		this.mOutputRenderFrame.setAccelerationPriority(1.0f);
+
+		this.mRecorder.setInputRenderFrame(this.mInputRenderFrame);
+		this.mRecorder.setOutputRenderFrame(this.mOutputRenderFrame);
+
+		this.mInputRenderFramePanel.setRenderFrame(this.mInputRenderFrame);
+
+		this.mOutputRenderFramePanel.setInputRenderFrame(this.mInputRenderFrame);
+		this.mOutputRenderFramePanel.setOutputRenderFrame(this.mOutputRenderFrame);
+	}
+
+	private void playMedia(final String pMediaFilename) {
+		this.mMediaPlayer = this.mMediaPlayerFactory.newDirectMediaPlayer(this.mBufferFormatCallback, this);
 
 		this.mMediaPlayer.setRepeat(true);
 
@@ -253,18 +279,19 @@ public class VAmp extends JFrame {
 
 		VAmp.this.mInputRenderFramePanel.setVideoFPS(fps);
 		VAmp.this.mOutputRenderFramePanel.setVideoFPS(fps);
+		VAmp.this.mRecorder.setFPS(Math.round(fps));
 
 		final long length = pMediaPlayer.getLength();
-		final int frames = Math.round(length / MILLISECONDS_PER_SECOND * fps);
-		if (frames > 0 && fps > 0) {
+		final int frames = Math.round((length / VAmp.MILLISECONDS_PER_SECOND) * fps);
+		if ((frames > 0) && (fps > 0)) {
 			SwingUtilities.invokeLater(new Runnable() {
 				@Override
 				public void run() {
 					// TODO Refactor a little:
-					final int desiredMajorTicks = (int)(frames / fps);
+					final int desiredMajorTicks = (int) (frames / fps);
 					final int majorTicks = Math.min(desiredMajorTicks, 6);
 
-					final int majorTickSpacing = (int)Math.round(fps) * (int)Math.ceil((float)desiredMajorTicks / majorTicks);
+					final int majorTickSpacing = Math.round(fps) * (int) Math.ceil((float) desiredMajorTicks / majorTicks);
 					final int minorTickSpacing = majorTickSpacing / 3;
 
 					VAmp.this.mFrameSlider.setMajorTickSpacing(majorTickSpacing);
@@ -292,10 +319,24 @@ public class VAmp extends JFrame {
 		}
 	}
 
+	@Override
+	public void display(final DirectMediaPlayer pMediaPlayer, final Memory[] pNativeBuffer, final BufferFormat pBufferFormat) {
+		final int width = pBufferFormat.getWidth();
+		final int height = pBufferFormat.getHeight();
+
+		final int[] argbBuffer = ((DataBufferInt) this.mInputRenderFrame.getRaster().getDataBuffer()).getData();
+
+		final long size = pNativeBuffer[0].size();
+		final IntBuffer intBuffer = pNativeBuffer[0].getByteBuffer(0L, size).asIntBuffer();
+		intBuffer.get(argbBuffer, 0, width * height);
+
+		this.onFrame();
+	}
+
 	private void onFrame() {
 		final float fps = this.mMediaPlayer.getFps();
 		final long time = this.mMediaPlayer.getTime();
-		final int frame = Math.round(time / MILLISECONDS_PER_SECOND * fps);
+		final int frame = Math.round((time / VAmp.MILLISECONDS_PER_SECOND) * fps);
 
 		if (!VAmp.this.mFrameSlider.getValueIsAdjusting()) {
 			SwingUtilities.invokeLater(new Runnable() {
@@ -308,26 +349,32 @@ public class VAmp extends JFrame {
 			});
 		}
 
-		VAmp.this.mInputRenderFramePanel.repaint();
-		VAmp.this.mOutputRenderFramePanel.notifyInputRenderFrameChanged();
-		VAmp.this.mOutputRenderFramePanel.repaint();
+		this.mInputRenderFramePanel.repaint();
+		this.mOutputRenderFramePanel.notifyInputRenderFrameChanged();
+		this.mOutputRenderFramePanel.repaint();
+
+		try {
+			this.mRecorder.onFrame();
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private void setFrame(final int pFrame) {
-		if (VAmp.this.mMediaPlayer != null) {
-			final float fps = VAmp.this.mMediaPlayer.getFps();
-			final long length = VAmp.this.mMediaPlayer.getLength();
-			final int frames = Math.round(length / MILLISECONDS_PER_SECOND * fps);
+		if (this.mMediaPlayer != null) {
+			final float fps = this.mMediaPlayer.getFps();
+			final long length = this.mMediaPlayer.getLength();
+			final int frames = Math.round((length / VAmp.MILLISECONDS_PER_SECOND) * fps);
 			final long time = Math.round(fps * pFrame);
 
-			VAmp.this.updateFrameTitledBorder(pFrame, frames);
+			this.updateFrameTitledBorder(pFrame, frames);
 
-			if (!VAmp.this.mFrameSliderIsChangedProgramatically) {
-				if (!VAmp.this.mFrameSlider.getValueIsAdjusting()) {
+			if (!this.mFrameSliderIsChangedProgramatically) {
+				if (!this.mFrameSlider.getValueIsAdjusting()) {
 					if (time > length) {
-						VAmp.this.mMediaPlayer.setTime(length);
+						this.mMediaPlayer.setTime(length);
 					} else {
-						VAmp.this.mMediaPlayer.setTime(time);
+						this.mMediaPlayer.setTime(time);
 					}
 				}
 			}
@@ -380,11 +427,14 @@ public class VAmp extends JFrame {
 							case ItemEvent.SELECTED:
 								VAmp.this.stopMedia();
 								VAmp.this.playMedia("qtcapture://");
-								VAmp.this.mOutputRenderFramePanel.setVideoFPS(30);
+								VAmp.this.mRecorder.setFPS(VAmp.FPS_DEFAULT);
+								VAmp.this.mRecorder.setFPSFixed(true);
+								VAmp.this.mOutputRenderFramePanel.setVideoFPS(VAmp.FPS_DEFAULT);
 								VAmp.this.mOutputRenderFramePanel.setVideoFPSFixed(true);
 								break;
 							case ItemEvent.DESELECTED:
 								VAmp.this.stopMedia();
+								VAmp.this.mRecorder.setFPSFixed(false);
 								VAmp.this.mOutputRenderFramePanel.setVideoFPSFixed(false);
 								VAmp.this.playMedia(VAmp.this.mMediaFilename);
 								break;
@@ -394,7 +444,7 @@ public class VAmp extends JFrame {
 			});
 
 			this.mMediaPanel.add(browseMediaFileButton);
-			this.mMediaPanel.add(mCameraCheckbox);
+			this.mMediaPanel.add(this.mCameraCheckbox);
 		}
 	}
 
@@ -448,7 +498,7 @@ public class VAmp extends JFrame {
 				@Override
 				public void stateChanged(final ChangeEvent pChangeEvent) {
 					final float amplification = ((float) amplificationSlider.getValue() / VAmp.AMPLIFICATION_SLIDER_FACTOR);
-					updateAmplificationTitledBorder(amplification);
+					VAmp.this.updateAmplificationTitledBorder(amplification);
 					VAmp.this.mOutputRenderFramePanel.setAmplification(amplification, amplification, amplification);
 				}
 			});
@@ -465,7 +515,7 @@ public class VAmp extends JFrame {
 							final boolean amplificationAbsolute = amplificationAbsoluteCheckbox.isSelected();
 							VAmp.this.mOutputRenderFramePanel.setAmplificationAbsolute(amplificationAbsolute);
 							break;
-					} 
+					}
 				}
 			});
 
@@ -503,35 +553,38 @@ public class VAmp extends JFrame {
 			});
 
 			final JPanel blurModePanel = new JPanel(new GridLayout(2, 1));
-			final ButtonGroup blurModeButtonGroup = new ButtonGroup();
+			{
+				final ButtonGroup blurModeButtonGroup = new ButtonGroup();
 
-			final JRadioButton gaussianBlurModeRadioButton = new JRadioButton("Gaussian", VAmp.BLUR_MODE_DEFAULT == BlurMode.GAUSSIAN);
-			blurModeButtonGroup.add(gaussianBlurModeRadioButton);
-			blurModePanel.add(gaussianBlurModeRadioButton);
-			gaussianBlurModeRadioButton.addItemListener(new ItemListener() {
-				@Override
-				public void itemStateChanged(final ItemEvent pItemEvent) {
-					switch (pItemEvent.getStateChange()) {
-						case ItemEvent.SELECTED:
-							VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.GAUSSIAN);
-							break;
-					} 
-				}
-			});
+				final JRadioButton gaussianBlurModeRadioButton = new JRadioButton("Gaussian", VAmp.BLUR_MODE_DEFAULT == BlurMode.GAUSSIAN);
+				blurModeButtonGroup.add(gaussianBlurModeRadioButton);
+				gaussianBlurModeRadioButton.addItemListener(new ItemListener() {
+					@Override
+					public void itemStateChanged(final ItemEvent pItemEvent) {
+						switch (pItemEvent.getStateChange()) {
+							case ItemEvent.SELECTED:
+								VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.GAUSSIAN);
+								break;
+						}
+					}
+				});
 
-			final JRadioButton boxBlurModeRadioButton = new JRadioButton("Box", VAmp.BLUR_MODE_DEFAULT == BlurMode.BOX);
-			blurModeButtonGroup.add(boxBlurModeRadioButton);
-			blurModePanel.add(boxBlurModeRadioButton);
-			boxBlurModeRadioButton.addItemListener(new ItemListener() {
-				@Override
-				public void itemStateChanged(final ItemEvent pItemEvent) {
-					switch (pItemEvent.getStateChange()) {
-						case ItemEvent.SELECTED:
-							VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.BOX);
-							break;
-					} 
-				}
-			});
+				final JRadioButton boxBlurModeRadioButton = new JRadioButton("Box", VAmp.BLUR_MODE_DEFAULT == BlurMode.BOX);
+				blurModeButtonGroup.add(boxBlurModeRadioButton);
+				boxBlurModeRadioButton.addItemListener(new ItemListener() {
+					@Override
+					public void itemStateChanged(final ItemEvent pItemEvent) {
+						switch (pItemEvent.getStateChange()) {
+							case ItemEvent.SELECTED:
+								VAmp.this.mOutputRenderFramePanel.setBlurMode(BlurMode.BOX);
+								break;
+						}
+					}
+				});
+
+				blurModePanel.add(gaussianBlurModeRadioButton);
+				blurModePanel.add(boxBlurModeRadioButton);
+			}
 
 			this.mBlurRadiusPanel.add(blurRadiusSlider);
 			this.mBlurRadiusPanel.add(blurModePanel);
@@ -570,28 +623,153 @@ public class VAmp extends JFrame {
 		}
 	}
 
+	private void createRecordPanel() {
+		this.mRecordPanel = new JPanel(new FlowLayout());
+		{
+			final TitledBorder recordPanelBorder = BorderFactory.createTitledBorder("Record:");
+			this.mRecordPanel.setBorder(recordPanelBorder);
+
+			final JButton browseMediaFileButton = new JButton("Browse");
+			final JButton recordButton = new JButton(VAmp.getImageIcon("/img/record.png"));
+			final JButton pauseButton = new JButton(VAmp.getImageIcon("/img/pause.png"));
+			final JButton resumeButton = new JButton(VAmp.getImageIcon("/img/resume.png"));
+			final JButton stopButton = new JButton(VAmp.getImageIcon("/img/stop.png"));
+			final JButton playButton = new JButton(VAmp.getImageIcon("/img/play.png"));
+
+			recordButton.setEnabled(false);
+			pauseButton.setEnabled(false);
+			resumeButton.setEnabled(false);
+			stopButton.setEnabled(false);
+			playButton.setEnabled(false);
+
+			browseMediaFileButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					final int result = VAmp.this.mRecordFileChooser.showSaveDialog(VAmp.this);
+
+					if (result == JFileChooser.APPROVE_OPTION) {
+						final File selectedFile = VAmp.this.mRecordFileChooser.getSelectedFile();
+						if (selectedFile.isDirectory()) {
+							VAmp.this.mRecorder.setFile(new File(selectedFile, System.currentTimeMillis() + ".avi"));
+						} else {
+							VAmp.this.mRecorder.setFile(selectedFile);
+						}
+
+						recordButton.setEnabled(true);
+						pauseButton.setEnabled(false);
+						resumeButton.setEnabled(false);
+						stopButton.setEnabled(false);
+						playButton.setEnabled(false);
+					}
+				}
+			});
+
+			recordButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					try {
+						VAmp.this.mRecorder.record();
+
+						recordButton.setEnabled(false);
+						pauseButton.setEnabled(true);
+						resumeButton.setEnabled(false);
+						stopButton.setEnabled(true);
+						playButton.setEnabled(false);
+					} catch (final IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+
+			pauseButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					VAmp.this.mRecorder.pause();
+
+					recordButton.setEnabled(false);
+					pauseButton.setEnabled(false);
+					resumeButton.setEnabled(true);
+					stopButton.setEnabled(true);
+					playButton.setEnabled(false);
+				}
+			});
+
+			resumeButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					VAmp.this.mRecorder.resume();
+
+					recordButton.setEnabled(false);
+					pauseButton.setEnabled(true);
+					resumeButton.setEnabled(false);
+					stopButton.setEnabled(true);
+					playButton.setEnabled(false);
+				}
+			});
+
+			stopButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					try {
+						VAmp.this.mRecorder.stop();
+
+						recordButton.setEnabled(true);
+						pauseButton.setEnabled(false);
+						resumeButton.setEnabled(false);
+						stopButton.setEnabled(false);
+						playButton.setEnabled(true);
+					} catch (final IOException e) {
+						e.printStackTrace();
+					}
+				}
+			});
+
+			playButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(final ActionEvent pActionEvent) {
+					VAmp.this.mRecorder.play();
+				}
+			});
+
+			this.mRecordPanel.add(browseMediaFileButton);
+			this.mRecordPanel.add(recordButton);
+			this.mRecordPanel.add(pauseButton);
+			this.mRecordPanel.add(resumeButton);
+			this.mRecordPanel.add(stopButton);
+			this.mRecordPanel.add(playButton);
+		}
+	}
+
 	private void updateFrameTitledBorder(final int pFrame, final int pFrames) {
-		final TitledBorder framePanelBorder = (TitledBorder)VAmp.this.mFramePanel.getBorder();
+		final TitledBorder framePanelBorder = (TitledBorder) VAmp.this.mFramePanel.getBorder();
 		framePanelBorder.setTitle("Frame: " + String.valueOf(pFrame) + "/" + String.valueOf(pFrames));
 		this.mFramePanel.repaint();
 	}
 
 	private void updateAmplificationTitledBorder(final float pAmplification) {
-		final TitledBorder amplificationPanelBorder = (TitledBorder)VAmp.this.mAmplificationPanel.getBorder();
+		final TitledBorder amplificationPanelBorder = (TitledBorder) VAmp.this.mAmplificationPanel.getBorder();
 		amplificationPanelBorder.setTitle("Amplification: " + String.valueOf(pAmplification) + "x");
 		this.mAmplificationPanel.repaint();
 	}
 
 	private void updateBlurRadiusTitledBorder(final int pBlurRadius) {
-		final TitledBorder blurRadiusPanelBorder = (TitledBorder)VAmp.this.mBlurRadiusPanel.getBorder();
+		final TitledBorder blurRadiusPanelBorder = (TitledBorder) VAmp.this.mBlurRadiusPanel.getBorder();
 		blurRadiusPanelBorder.setTitle("Blur-Radius: " + String.valueOf(pBlurRadius) + "px");
 		this.mBlurRadiusPanel.repaint();
 	}
 
 	private void updateFrequencyTitledBorder(final float pFrequency) {
-		final TitledBorder frequencyPanelBorder = (TitledBorder)VAmp.this.mFrequencyPanel.getBorder();
+		final TitledBorder frequencyPanelBorder = (TitledBorder) VAmp.this.mFrequencyPanel.getBorder();
 		frequencyPanelBorder.setTitle("Frequency: " + String.valueOf(pFrequency) + "Hz");
 		this.mFrequencyPanel.repaint();
+	}
+
+	private static ImageIcon getImageIcon(final String pFilename) {
+		try {
+			return new ImageIcon(ImageIO.read(VAmp.class.getResourceAsStream(pFilename)));
+		} catch (final IOException e) {
+			return null;
+		}
 	}
 
 	// ===========================================================

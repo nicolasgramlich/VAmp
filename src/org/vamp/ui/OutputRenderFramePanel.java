@@ -25,8 +25,8 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// Fields
 	// ===========================================================
 
-	protected final BufferedImage mInputRenderFrame;
-	protected final int[] mInputRenderFrameBuffer;
+	protected BufferedImage mInputRenderFrame;
+	protected int[] mInputRenderFrameBuffer;
 
 	protected int mReferenceRenderFrameIndex = 0;
 	protected final int[][] mReferenceRenderFrameBuffers = new int[REFERENCE_RENDER_FRAME_BUFFER_COUNT][];
@@ -52,16 +52,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	public OutputRenderFramePanel(final BufferedImage pRenderFrame, final BufferedImage pInputRenderFrame) {
 		super(pRenderFrame);
 
-		this.mInputRenderFrame = pInputRenderFrame;
-		this.mInputRenderFrameBuffer = ((DataBufferInt) this.mInputRenderFrame.getRaster().getDataBuffer()).getData();
-
-		for (int i = 0; i < this.mReferenceRenderFrameBuffers.length; i++) {
-			this.mReferenceRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
-		}
-
-		for (int i = 0; i < this.mTempRenderFrameBuffers.length; i++) {
-			this.mTempRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
-		}
+		this.setInputRenderFrame(pInputRenderFrame);
 
 		this.mForkJoinPool = new ForkJoinPool();
 	}
@@ -69,6 +60,36 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 	// ===========================================================
 	// Getter & Setter
 	// ===========================================================
+
+	@Deprecated
+	@Override
+	public void setRenderFrame(BufferedImage pRenderFrame) {
+		this.setOutputRenderFrame(pRenderFrame);
+	}
+
+	public void setInputRenderFrame(final BufferedImage pInputRenderFrame) {
+		if (pInputRenderFrame == null) {
+			this.mInputRenderFrame = null;
+
+			this.mInputRenderFrameBuffer = null;
+		} else {
+			this.mInputRenderFrame = pInputRenderFrame;
+
+			this.mInputRenderFrameBuffer = ((DataBufferInt) this.mInputRenderFrame.getRaster().getDataBuffer()).getData();
+
+			for (int i = 0; i < this.mReferenceRenderFrameBuffers.length; i++) {
+				this.mReferenceRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
+			}
+
+			for (int i = 0; i < this.mTempRenderFrameBuffers.length; i++) {
+				this.mTempRenderFrameBuffers[i] = new int[this.mInputRenderFrameBuffer.length];
+			}
+		}
+	}
+
+	public void setOutputRenderFrame(final BufferedImage pOutputRenderFrame) {
+		super.setRenderFrame(pOutputRenderFrame);
+	}
 
 	public void setAmplification(final float pAmplificationRed, final float pAmplificationGreen, final float pAmplificationBlue) {
 		this.mAmplificationRed = pAmplificationRed;
@@ -184,7 +205,7 @@ public class OutputRenderFramePanel extends RenderFramePanel {
 		}
 		final long amplificationEndTime = System.currentTimeMillis();
 
-		System.out.println("Blur: " + (blurEndTime - blurStartTime) + "ms" + "\t\tAmp: " + (amplificationEndTime - amplificationStartTime) + "ms");
+//		System.out.println("Blur: " + (blurEndTime - blurStartTime) + "ms" + "\t\tAmp: " + (amplificationEndTime - amplificationStartTime) + "ms");
 
 		this.mReferenceRenderFrameIndex++;
 		this.mReferenceRenderFrameIndex %= REFERENCE_RENDER_FRAME_BUFFER_COUNT;

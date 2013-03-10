@@ -13,7 +13,8 @@ xcuserdata/
 .metadata/
 
 # Resources Folder:
-res/
+input/
+output/
 
 # Binary Folder:
 bin/

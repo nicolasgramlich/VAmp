@@ -25,7 +25,7 @@ public abstract class GaussianBlurRenderFrameForkJoin extends BlurRenderFrameFor
 	}
 
 	public GaussianBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int pWindowLeft, final int pWindowTop, final int pWindowRight, final int pWindowBottom, final int[] pOutputRenderFrameBuffer, final int pBlurRadius) {
-		this(pInputRenderFrameBuffer, pWidth, pHeight, pWindowLeft, pWindowTop, pWindowRight, pWindowBottom, pOutputRenderFrameBuffer, pBlurRadius, GaussianBlurRenderFrameForkJoin.makeKernel(pBlurRadius));
+		this(pInputRenderFrameBuffer, pWidth, pHeight, pWindowLeft, pWindowTop, pWindowRight, pWindowBottom, pOutputRenderFrameBuffer, pBlurRadius, GaussianBlurRenderFrameForkJoin.createKernel(pBlurRadius));
 	}
 
 	public GaussianBlurRenderFrameForkJoin(final int[] pInputRenderFrameBuffer, final int pWidth, final int pHeight, final int pWindowLeft, final int pWindowTop, final int pWindowRight, final int pWindowBottom, final int[] pOutputRenderFrameBuffer, final int pBlurRadius, final float[] pKernel) {
@@ -46,7 +46,7 @@ public abstract class GaussianBlurRenderFrameForkJoin extends BlurRenderFrameFor
 	// Methods
 	// ===========================================================
 
-	public static float[] makeKernel(final int pRadius) {
+	public static float[] createKernel(final int pRadius) {
 		final float sigma = pRadius / 3f;
 		final float sigmaSquared2 = 2 * sigma * sigma;
 		final float sqrtSigmaPi2 = (float) Math.sqrt(2 * Math.PI * sigma);
