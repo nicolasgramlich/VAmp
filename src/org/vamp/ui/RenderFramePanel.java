@@ -66,11 +66,11 @@ public abstract class RenderFramePanel extends JPanel {
 
 		final Graphics2D graphics2D = (Graphics2D) pGraphics;
 
+		final int width = this.getWidth();
+		final int height = this.getHeight();
+
 		if (this.mVideoDimension == null) {
 			/* Video didn't start yet! */
-			final int width = this.getWidth();
-			final int height = this.getHeight();
-
 			graphics2D.setColor(Color.WHITE);
 			graphics2D.fillRect(0, 0, width - 1, height - 1);
 			graphics2D.setColor(Color.BLACK);
@@ -89,24 +89,24 @@ public abstract class RenderFramePanel extends JPanel {
 		}
 
 		final float videoAspectRatio = (float) this.mVideoDimension.width / this.mVideoDimension.height;
-		final float panelAspectRatio = (float) this.getWidth() / this.getHeight();
+		final float panelAspectRatio = (float) width / height;
 
 		final int drawX;
 		final int drawY;
 		final int drawWidth;
 		final int drawHeight;
 		if (videoAspectRatio > panelAspectRatio) {
-			drawWidth = this.getWidth();
+			drawWidth = width;
 			drawHeight = Math.round(drawWidth / videoAspectRatio);
 
 			drawX = 0;
-			drawY = Math.round(0.5f * (this.getHeight() - drawHeight));
+			drawY = Math.round(0.5f * (height - drawHeight));
 		} else {
-			drawHeight = this.getHeight();
+			drawHeight = height;
 			drawWidth = Math.round(drawHeight * videoAspectRatio);
 
 			drawY = 0;
-			drawX = Math.round(0.5f * (this.getWidth() - drawWidth));
+			drawX = Math.round(0.5f * (width - drawWidth));
 		}
 
 		graphics2D.drawImage(this.mRenderFrame, drawX, drawY, drawWidth, drawHeight, null);
