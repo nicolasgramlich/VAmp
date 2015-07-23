@@ -60,8 +60,8 @@ public class HorizontalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameFork
 		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
 		final int[] outputRenderFrameBuffer = this.mOutputRenderFrameBuffer;
 
-		for (int x = windowLeft; x < windowRight; x++) {
-			for (int y = windowTop; y < windowBottom; y++) {
+		for (int y = windowTop; y < windowBottom; y++) {
+			for (int x = windowLeft; x < windowRight; x++) {
 				final int yBase = y * width;
 
 				final int left = Math.max(x - blurRadius, 0);
