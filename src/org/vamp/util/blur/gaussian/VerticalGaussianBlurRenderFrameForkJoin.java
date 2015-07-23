@@ -66,8 +66,8 @@ public class VerticalGaussianBlurRenderFrameForkJoin extends GaussianBlurRenderF
 		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
 		final int[] outputRenderFrameBuffer = this.mOutputRenderFrameBuffer;
 
-		for (int x = windowLeft; x < windowRight; x++) {
-			for (int y = windowTop; y < windowBottom; y++) {
+		for (int y = windowTop; y < windowBottom; y++) {
+			for (int x = windowLeft; x < windowRight; x++) {
 				float r = 0;
 				float g = 0;
 				float b = 0;
