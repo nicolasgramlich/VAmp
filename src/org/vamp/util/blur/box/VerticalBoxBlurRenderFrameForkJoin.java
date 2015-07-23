@@ -61,8 +61,8 @@ public class VerticalBoxBlurRenderFrameForkJoin extends BoxBlurRenderFrameForkJo
 		final int[] inputRenderFrameBuffer = this.mInputRenderFrameBuffer;
 		final int[] outputRenderFrameBuffer = this.mOutputRenderFrameBuffer;
 
-		for (int x = windowLeft; x < windowRight; x++) {
-			for (int y = windowTop; y < windowBottom; y++) {
+		for (int y = windowTop; y < windowBottom; y++) {
+			for (int x = windowLeft; x < windowRight; x++) {
 				final int top = Math.max(y - blurRadius, 0);
 				final int bottom = Math.min(y + blurRadius, height - 1);
 
